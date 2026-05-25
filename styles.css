@@ -1,7 +1,6 @@
 :root {
   color-scheme: light;
-  --screen-width: 393px;
-  --screen-height: 852px;
+  --screen-max-width: 960px;
   --paper: #f1e2bc;
   --ink: #1f160e;
   --card: rgba(255, 255, 255, 0.88);
@@ -33,18 +32,18 @@ button {
 }
 
 .app-shell {
-  min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 0;
 }
 
 .phone-frame {
   position: relative;
-  width: min(100vw, var(--screen-width));
-  height: min(100vh, var(--screen-height));
+  width: min(100vw, var(--screen-max-width));
+  height: 100svh;
   overflow: hidden;
-  border-radius: 34px;
+  border-radius: 0;
   background: #d7c4a0;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
 }
@@ -240,7 +239,18 @@ button {
 
   .phone-frame {
     width: 100vw;
-    height: 100vh;
+    height: 100svh;
     border-radius: 0;
+  }
+}
+
+@media (min-width: 961px) {
+  .app-shell {
+    padding: 24px;
+  }
+
+  .phone-frame {
+    height: min(100svh, 920px);
+    border-radius: 34px;
   }
 }

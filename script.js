@@ -46,6 +46,16 @@ function resizeCanvas(nextScale) {
   mapCanvas.style.height = `${BASE_HEIGHT * nextScale}px`;
 }
 
+function centerViewportOn(contentX, contentY) {
+  const maxScrollLeft = Math.max(0, mapCanvas.offsetWidth - viewport.clientWidth);
+  const maxScrollTop = Math.max(0, mapCanvas.offsetHeight - viewport.clientHeight);
+  const targetScrollLeft = contentX * scale - viewport.clientWidth / 2;
+  const targetScrollTop = contentY * scale - viewport.clientHeight / 2;
+
+  viewport.scrollLeft = clamp(targetScrollLeft, 0, maxScrollLeft);
+  viewport.scrollTop = clamp(targetScrollTop, 0, maxScrollTop);
+}
+
 function getMinScale() {
   const widthFitScale = viewport.clientWidth / BASE_WIDTH;
   const heightFitScale = viewport.clientHeight / BASE_HEIGHT;
@@ -175,8 +185,7 @@ viewport.addEventListener("touchcancel", () => {
 window.addEventListener("load", () => {
   scale = getMinScale();
   resizeCanvas(scale);
-  viewport.scrollLeft = 360;
-  viewport.scrollTop = 48;
+  centerViewportOn(BASE_WIDTH / 2, BASE_HEIGHT / 2);
 });
 
 window.addEventListener("resize", () => {

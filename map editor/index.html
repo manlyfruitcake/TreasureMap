@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Treasure Map Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="editor-shell">
+      <section class="editor-panel intro-panel">
+        <p class="eyebrow">Treasure Map Toolkit</p>
+        <h1>Map Editor</h1>
+        <p class="intro-copy">
+          Click anywhere on the map to add a node. Drag nodes to reposition them, then edit the
+          title, description, and icon in the right panel.
+        </p>
+        <div class="toolbar">
+          <button class="primary-button" type="button" id="addNodeButton">Add node at center</button>
+          <button class="secondary-button" type="button" id="deleteNodeButton" disabled>
+            Delete selected node
+          </button>
+        </div>
+      </section>
+
+      <section class="map-workspace" aria-label="Map editing workspace">
+        <div class="workspace-header">
+          <div>
+            <p class="eyebrow">Canvas</p>
+            <h2>Area Placement</h2>
+          </div>
+          <p class="workspace-note">Assets loaded from <code>../images</code> and <code>../Icons</code>.</p>
+        </div>
+
+        <div class="map-viewport" id="mapViewport">
+          <div class="map-canvas" id="mapCanvas">
+            <img class="map-image" src="../images/map.png" alt="Treasure map" />
+          </div>
+        </div>
+      </section>
+
+      <aside class="editor-panel details-panel" aria-label="Selected node details">
+        <div class="details-header">
+          <p class="eyebrow">Node Details</p>
+          <h2 id="panelTitle">No node selected</h2>
+        </div>
+
+        <form class="details-form" id="nodeForm">
+          <label class="field">
+            <span>Area title</span>
+            <input id="nodeTitle" name="title" type="text" placeholder="Ex: Seventh Hell" disabled />
+          </label>
+
+          <label class="field">
+            <span>Area description</span>
+            <textarea
+              id="nodeDescription"
+              name="description"
+              rows="6"
+              placeholder="Describe the area here"
+              disabled
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span>Icon</span>
+            <select id="nodeIcon" name="icon" disabled></select>
+          </label>
+
+          <div class="coordinates">
+            <label class="field">
+              <span>X (%)</span>
+              <input id="nodeX" name="x" type="number" min="0" max="100" step="0.1" disabled />
+            </label>
+
+            <label class="field">
+              <span>Y (%)</span>
+              <input id="nodeY" name="y" type="number" min="0" max="100" step="0.1" disabled />
+            </label>
+          </div>
+        </form>
+
+        <section class="export-panel" aria-label="Node export data">
+          <div class="export-header">
+            <p class="eyebrow">Export</p>
+            <button class="secondary-button" type="button" id="copyJsonButton">Copy JSON</button>
+          </div>
+          <textarea id="exportOutput" rows="14" readonly></textarea>
+        </section>
+      </aside>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
