@@ -1,0 +1,246 @@
+:root {
+  color-scheme: light;
+  --screen-width: 393px;
+  --screen-height: 852px;
+  --paper: #f1e2bc;
+  --ink: #1f160e;
+  --card: rgba(255, 255, 255, 0.88);
+  --card-strong: rgba(255, 255, 255, 0.94);
+  --outline: rgba(255, 255, 255, 0.92);
+  --shadow: rgba(43, 25, 10, 0.28);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(255, 224, 160, 0.45), transparent 28%),
+    linear-gradient(180deg, #8e6748 0%, #6e4b35 100%);
+  color: var(--ink);
+  font-family: "Nunito", sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.phone-frame {
+  position: relative;
+  width: min(100vw, var(--screen-width));
+  height: min(100vh, var(--screen-height));
+  overflow: hidden;
+  border-radius: 34px;
+  background: #d7c4a0;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+}
+
+.map-title {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  min-width: 225px;
+  max-width: calc(100% - 48px);
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(48, 32, 22, 0.15);
+  font-family: "Baloo 2", sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 0.9;
+  text-align: center;
+}
+
+.map-viewport {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+}
+
+.map-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.map-canvas {
+  position: relative;
+  width: 1215px;
+  height: 852px;
+}
+
+.map-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.map-node {
+  position: absolute;
+  z-index: 2;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--outline);
+  border-radius: 50%;
+  background: rgba(46, 44, 36, 0.68);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(3px);
+}
+
+.map-node img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.zoom-controls {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transform: translateY(-50%);
+}
+
+.zoom-button {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--outline);
+  border-radius: 50%;
+  background: rgba(46, 44, 36, 0.74);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  backdrop-filter: blur(3px);
+}
+
+.zoom-button:active {
+  transform: scale(0.96);
+}
+
+.hint-card {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 0;
+  z-index: 3;
+  padding: 16px 20px 24px;
+  border-radius: 28px 28px 0 0;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.hint-card h2,
+.info-card h2 {
+  margin: 0 0 4px;
+  font-family: "Baloo 2", sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.hint-card p,
+.info-card p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.info-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+}
+
+.hidden {
+  display: none;
+}
+
+.info-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(244, 236, 217, 0.52);
+  backdrop-filter: blur(6px);
+}
+
+.info-card {
+  position: absolute;
+  top: 118px;
+  left: 18px;
+  right: 18px;
+  padding: 28px 28px 34px;
+  border-radius: 34px;
+  background: var(--card);
+  box-shadow: 0 18px 45px var(--shadow);
+  text-align: center;
+}
+
+.close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #111;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.image-placeholder {
+  height: 142px;
+  margin: 18px 0 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(214, 214, 214, 0.9);
+  color: #464646;
+  font-weight: 700;
+}
+
+@media (max-width: 420px) {
+  .app-shell {
+    padding: 0;
+  }
+
+  .phone-frame {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+}

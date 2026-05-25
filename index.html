@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Treasure Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="phone-frame" aria-label="Interactive treasure map">
+        <header class="map-title">The One Piece Map</header>
+
+        <div class="map-viewport" id="mapViewport">
+          <div class="map-canvas">
+            <img class="map-image" src="./images/map.png" alt="Illustrated treasure map" />
+
+            <button
+              class="map-node"
+              type="button"
+              style="left: 48%; top: 43%;"
+              data-node-id="dummy-cove"
+              aria-label="Open info for Seventh Hell"
+            >
+              <img src="./Icons/iconRestaurant.png" alt="" />
+            </button>
+          </div>
+        </div>
+
+        <div class="zoom-controls" aria-label="Map zoom controls">
+          <button class="zoom-button" type="button" id="zoomInButton" aria-label="Zoom in">+</button>
+          <button class="zoom-button" type="button" id="zoomOutButton" aria-label="Zoom out">−</button>
+        </div>
+
+        <aside class="hint-card" id="hintCard">
+          <h2>Ay ay, Captain!</h2>
+          <p>Click on the nodes to reveal the secret</p>
+        </aside>
+
+        <section class="info-modal hidden" id="infoModal" aria-hidden="true">
+          <div class="info-backdrop" data-close-modal="true"></div>
+          <article class="info-card" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+            <button class="close-button" type="button" id="closeModalButton" aria-label="Close details">
+              ×
+            </button>
+            <h2 id="infoTitle">Seventh Hell</h2>
+            <div class="image-placeholder">
+              <span>Image coming later</span>
+            </div>
+            <p id="infoDescription">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam eu turpis molestie,
+              dictum est a, mattis tellus. Sed dignissim, metus nec fringilla accumsan, risus sem
+              sollicitudin lacus, ut interdum tellus elit sed risus.
+            </p>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
