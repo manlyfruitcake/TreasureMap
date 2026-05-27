@@ -100,6 +100,17 @@ h2 {
   line-height: 1.45;
 }
 
+.save-status {
+  margin: -8px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.save-status.is-dirty {
+  color: var(--sea-strong);
+}
+
 .toolbar,
 .export-header,
 .workspace-header {
@@ -129,6 +140,11 @@ h2 {
 
 .primary-button:hover {
   background: var(--sea-strong);
+}
+
+.primary-button:disabled {
+  background: rgba(47, 108, 119, 0.45);
+  cursor: not-allowed;
 }
 
 .secondary-button {

@@ -1,46 +1,12 @@
-const ICONS = [
-  "iconBallroom.png",
-  "iconBallroom_onHold.png",
-  "iconBeach.png",
-  "iconBeachShore.png",
-  "iconBeachShore_onHold.png",
-  "iconBeach_onHold.png",
-  "iconDiving.png",
-  "iconDiving_onHold.png",
-  "iconEnemies.png",
-  "iconEnemies_onHold.png",
-  "iconGazebo.png",
-  "iconGazebo_onHold.png",
-  "iconGym.png",
-  "iconGym_onHold.png",
-  "iconHotelRoom.png",
-  "iconHotelRoom_onHold.png",
-  "iconKrakatau.png",
-  "iconKrakatau_onHold.png",
-  "iconLighthouse.png",
-  "iconLighthouse_onHold.png",
-  "iconMusholla.png",
-  "iconMusholla_onHold.png",
-  "iconParking.png",
-  "iconParking_onHold.png",
-  "iconPlayground.png",
-  "iconPlayground_onHold.png",
-  "iconPool.png",
-  "iconPool_onHold.png",
-  "iconReceptionist.png",
-  "iconReceptionist_onHold.png",
-  "iconRestaurant.png",
-  "iconRestaurant_onHold.png",
-  "iconSeasideTerrace.png",
-  "iconSeasideTerrace_onHold.png",
-];
-
 const mapViewport = document.getElementById("mapViewport");
 const mapCanvas = document.getElementById("mapCanvas");
 const mapImage = mapCanvas.querySelector(".map-image");
+const saveNodesButton = document.getElementById("saveNodesButton");
 const addNodeButton = document.getElementById("addNodeButton");
 const deleteNodeButton = document.getElementById("deleteNodeButton");
+const resetNodesButton = document.getElementById("resetNodesButton");
 const copyJsonButton = document.getElementById("copyJsonButton");
+const saveStatus = document.getElementById("saveStatus");
 const panelTitle = document.getElementById("panelTitle");
 const titleInput = document.getElementById("nodeTitle");
 const descriptionInput = document.getElementById("nodeDescription");
@@ -48,18 +14,26 @@ const iconSelect = document.getElementById("nodeIcon");
 const xInput = document.getElementById("nodeX");
 const yInput = document.getElementById("nodeY");
 const exportOutput = document.getElementById("exportOutput");
+const { ICONS, DEFAULT_NODES, loadNodes, saveNodes, STORAGE_KEY } = window.TreasureMapData;
 
-const nodes = [];
+let nodes = loadNodes();
 let selectedNodeId = null;
-let nodeCount = 0;
 let dragState = null;
+let isDirty = false;
+
+function cloneNodes(nodeList) {
+  return nodeList.map((node) => ({ ...node }));
+}
 
 function createDefaultNode(x, y) {
-  nodeCount += 1;
+  const nextIndex = nodes.reduce((maxValue, node) => {
+    const match = /^area-(\d+)$/.exec(node.id);
+    return match ? Math.max(maxValue, Number(match[1])) : maxValue;
+  }, 0) + 1;
 
   return {
-    id: `area-${nodeCount}`,
-    title: `Area ${nodeCount}`,
+    id: `area-${nextIndex}`,
+    title: `Area ${nextIndex}`,
     description: "",
     icon: ICONS[0],
     x,
@@ -101,6 +75,24 @@ function setFormDisabled(isDisabled) {
 
 function updateExport() {
   exportOutput.value = JSON.stringify(nodes, null, 2);
+}
+
+function setDirtyState(nextDirty, message = nextDirty ? "Unsaved changes" : "All changes saved") {
+  isDirty = nextDirty;
+  saveNodesButton.disabled = !nextDirty;
+  saveStatus.textContent = message;
+  saveStatus.classList.toggle("is-dirty", nextDirty);
+}
+
+function markDirty() {
+  setDirtyState(true);
+  updateExport();
+}
+
+function persistNodes(message = "Changes saved to main app") {
+  nodes = saveNodes(nodes);
+  updateExport();
+  setDirtyState(false, message);
 }
 
 function updateForm() {
@@ -179,7 +171,7 @@ function createNodeElement(node) {
     button.style.left = `${node.x}%`;
     button.style.top = `${node.y}%`;
     updateForm();
-    updateExport();
+    markDirty();
   });
 
   button.addEventListener("pointerup", () => {
@@ -218,6 +210,7 @@ function addNodeAt(x, y) {
   const node = createDefaultNode(formatCoordinate(x), formatCoordinate(y));
   nodes.push(node);
   selectedNodeId = node.id;
+  markDirty();
   render();
 }
 
@@ -237,8 +230,13 @@ function syncSelectedNode(mutator) {
   }
 
   mutator(node);
+  markDirty();
   render();
 }
+
+saveNodesButton.addEventListener("click", () => {
+  persistNodes();
+});
 
 addNodeButton.addEventListener("click", () => {
   addNodeAt(50, 50);
@@ -253,6 +251,14 @@ deleteNodeButton.addEventListener("click", () => {
 
   nodes.splice(index, 1);
   selectedNodeId = nodes[index]?.id ?? nodes[index - 1]?.id ?? null;
+  markDirty();
+  render();
+});
+
+resetNodesButton.addEventListener("click", () => {
+  nodes = cloneNodes(DEFAULT_NODES);
+  selectedNodeId = nodes[0]?.id ?? null;
+  markDirty();
   render();
 });
 
@@ -313,8 +319,31 @@ copyJsonButton.addEventListener("click", async () => {
 populateIconSelect();
 setFormDisabled(true);
 updateExport();
+setDirtyState(false);
 
 window.addEventListener("load", () => {
   mapViewport.scrollLeft = Math.max(0, (mapCanvas.scrollWidth - mapViewport.clientWidth) / 2);
   mapViewport.scrollTop = Math.max(0, (mapCanvas.scrollHeight - mapViewport.clientHeight) / 2);
+  selectedNodeId = nodes[0]?.id ?? null;
+  render();
+});
+
+window.addEventListener("storage", (event) => {
+  if (event.key !== STORAGE_KEY) {
+    return;
+  }
+
+  if (isDirty) {
+    setDirtyState(true, "Unsaved changes in editor. External saved data is available.");
+    return;
+  }
+
+  nodes = loadNodes();
+
+  if (!nodes.some((node) => node.id === selectedNodeId)) {
+    selectedNodeId = nodes[0]?.id ?? null;
+  }
+
+  render();
+  setDirtyState(false, "Editor refreshed from saved main app data");
 });

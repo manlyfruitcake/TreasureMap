@@ -103,16 +103,15 @@ button {
   margin: -32px 0 0 -32px;
   display: grid;
   place-items: center;
-  border: 3px solid var(--outline);
-  border-radius: 50%;
-  background: rgba(46, 44, 36, 0.68);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(3px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .map-node img {
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
 }
 

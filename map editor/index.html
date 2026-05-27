@@ -22,11 +22,14 @@
           title, description, and icon in the right panel.
         </p>
         <div class="toolbar">
+          <button class="primary-button" type="button" id="saveNodesButton">Save changes</button>
           <button class="primary-button" type="button" id="addNodeButton">Add node at center</button>
           <button class="secondary-button" type="button" id="deleteNodeButton" disabled>
             Delete selected node
           </button>
+          <button class="secondary-button" type="button" id="resetNodesButton">Reset to defaults</button>
         </div>
+        <p class="save-status" id="saveStatus" aria-live="polite">All changes saved</p>
       </section>
 
       <section class="map-workspace" aria-label="Map editing workspace">
@@ -96,6 +99,7 @@
       </aside>
     </main>
 
+    <script src="../data/map-data.js"></script>
     <script src="./script.js"></script>
   </body>
 </html>

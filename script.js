@@ -1,11 +1,3 @@
-const nodes = {
-  "dummy-cove": {
-    title: "Seventh Hell",
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam eu turpis molestie, dictum est a, mattis tellus. Sed dignissim, metus nec fringilla accumsan, risus sem sollicitudin lacus, ut interdum tellus elit sed risus.",
-  },
-};
-
 const viewport = document.getElementById("mapViewport");
 const mapCanvas = document.querySelector(".map-canvas");
 const modal = document.getElementById("infoModal");
@@ -18,11 +10,13 @@ const zoomOutButton = document.getElementById("zoomOutButton");
 const BASE_WIDTH = 1215;
 const BASE_HEIGHT = 852;
 const MIN_SCALE = 0.5;
-const MAX_SCALE = 1.5;
+const MAX_SCALE = 2;
 const ZOOM_STEP = 0.1;
+const { loadNodes, STORAGE_KEY } = window.TreasureMapData;
 
 let scale = 1;
 let pinchState = null;
+let nodes = loadNodes();
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -82,8 +76,38 @@ function setScale(nextScale, focalPoint = null) {
   viewport.scrollTop = Math.max(0, contentY * scale - viewportY);
 }
 
+function getNodeById(nodeId) {
+  return nodes.find((node) => node.id === nodeId) ?? null;
+}
+
+function getIconPath(fileName) {
+  return `./Icons/${fileName}`;
+}
+
+function renderNodes() {
+  mapCanvas.querySelectorAll(".map-node").forEach((nodeElement) => nodeElement.remove());
+
+  nodes.forEach((node) => {
+    const button = document.createElement("button");
+    button.className = "map-node";
+    button.type = "button";
+    button.dataset.nodeId = node.id;
+    button.setAttribute("aria-label", `Open info for ${node.title}`);
+    button.style.left = `${node.x}%`;
+    button.style.top = `${node.y}%`;
+
+    const icon = document.createElement("img");
+    icon.src = getIconPath(node.icon);
+    icon.alt = "";
+
+    button.append(icon);
+    button.addEventListener("click", () => openModal(node.id));
+    mapCanvas.append(button);
+  });
+}
+
 function openModal(nodeId) {
-  const node = nodes[nodeId];
+  const node = getNodeById(nodeId);
 
   if (!node) {
     return;
@@ -101,10 +125,6 @@ function closeModal() {
   modal.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
 }
-
-document.querySelectorAll(".map-node").forEach((button) => {
-  button.addEventListener("click", () => openModal(button.dataset.nodeId));
-});
 
 modal.addEventListener("click", (event) => {
   if (event.target instanceof HTMLElement && event.target.dataset.closeModal === "true") {
@@ -183,6 +203,8 @@ viewport.addEventListener("touchcancel", () => {
 });
 
 window.addEventListener("load", () => {
+  nodes = loadNodes();
+  renderNodes();
   scale = getMinScale();
   resizeCanvas(scale);
   centerViewportOn(BASE_WIDTH / 2, BASE_HEIGHT / 2);
@@ -190,4 +212,17 @@ window.addEventListener("load", () => {
 
 window.addEventListener("resize", () => {
   setScale(scale);
+});
+
+window.addEventListener("storage", (event) => {
+  if (event.key !== STORAGE_KEY) {
+    return;
+  }
+
+  nodes = loadNodes();
+  renderNodes();
+
+  if (!modal.classList.contains("hidden")) {
+    closeModal();
+  }
 });
