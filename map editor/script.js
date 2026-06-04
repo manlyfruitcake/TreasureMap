@@ -1,7 +1,10 @@
 const mapViewport = document.getElementById("mapViewport");
 const mapCanvas = document.getElementById("mapCanvas");
 const mapImage = mapCanvas.querySelector(".map-image");
+const iconGrid = document.getElementById("iconGrid");
 const saveNodesButton = document.getElementById("saveNodesButton");
+const zoomInButton = document.getElementById("zoomInButton");
+const zoomOutButton = document.getElementById("zoomOutButton");
 const addNodeButton = document.getElementById("addNodeButton");
 const deleteNodeButton = document.getElementById("deleteNodeButton");
 const resetNodesButton = document.getElementById("resetNodesButton");
@@ -10,16 +13,20 @@ const saveStatus = document.getElementById("saveStatus");
 const panelTitle = document.getElementById("panelTitle");
 const titleInput = document.getElementById("nodeTitle");
 const descriptionInput = document.getElementById("nodeDescription");
-const iconSelect = document.getElementById("nodeIcon");
 const xInput = document.getElementById("nodeX");
 const yInput = document.getElementById("nodeY");
 const exportOutput = document.getElementById("exportOutput");
 const { ICONS, DEFAULT_NODES, loadNodes, saveNodes, STORAGE_KEY } = window.TreasureMapData;
+const BASE_WIDTH = 1215;
+const BASE_HEIGHT = 852;
+const MAX_SCALE = 2;
+const ZOOM_STEP = 0.1;
 
 let nodes = loadNodes();
 let selectedNodeId = null;
 let dragState = null;
 let isDirty = false;
+let scale = 1;
 
 function cloneNodes(nodeList) {
   return nodeList.map((node) => ({ ...node }));
@@ -49,16 +56,67 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function getMinScale() {
+  const widthFitScale = mapViewport.clientWidth / BASE_WIDTH;
+  const heightFitScale = mapViewport.clientHeight / BASE_HEIGHT;
+  return Math.min(1, Math.max(widthFitScale, heightFitScale));
+}
+
+function resizeCanvas(nextScale) {
+  mapCanvas.style.width = `${BASE_WIDTH * nextScale}px`;
+  mapCanvas.style.height = `${BASE_HEIGHT * nextScale}px`;
+}
+
+function setScale(nextScale, focalPoint = null) {
+  const clampedScale = clamp(nextScale, getMinScale(), MAX_SCALE);
+
+  if (clampedScale === scale) {
+    return;
+  }
+
+  const previousScale = scale;
+  const viewportX = focalPoint?.viewportX ?? mapViewport.clientWidth / 2;
+  const viewportY = focalPoint?.viewportY ?? mapViewport.clientHeight / 2;
+  const contentX = focalPoint?.contentX ?? (mapViewport.scrollLeft + viewportX) / previousScale;
+  const contentY = focalPoint?.contentY ?? (mapViewport.scrollTop + viewportY) / previousScale;
+
+  scale = clampedScale;
+  resizeCanvas(scale);
+
+  const maxScrollLeft = Math.max(0, mapCanvas.offsetWidth - mapViewport.clientWidth);
+  const maxScrollTop = Math.max(0, mapCanvas.offsetHeight - mapViewport.clientHeight);
+  const nextScrollLeft = contentX * scale - viewportX;
+  const nextScrollTop = contentY * scale - viewportY;
+
+  mapViewport.scrollLeft = clamp(nextScrollLeft, 0, maxScrollLeft);
+  mapViewport.scrollTop = clamp(nextScrollTop, 0, maxScrollTop);
+}
+
 function formatCoordinate(value) {
   return Number(value.toFixed(1));
 }
 
-function populateIconSelect() {
+function populateIconPicker() {
   ICONS.forEach((iconName) => {
-    const option = document.createElement("option");
-    option.value = iconName;
-    option.textContent = iconName.replace(".png", "");
-    iconSelect.append(option);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "icon-choice";
+    button.dataset.iconName = iconName;
+    button.setAttribute("role", "option");
+    button.setAttribute("aria-label", iconName.replace(".png", ""));
+
+    const preview = document.createElement("img");
+    preview.src = getIconPath(iconName);
+    preview.alt = "";
+
+    button.append(preview);
+    button.addEventListener("click", () => {
+      syncSelectedNode((node) => {
+        node.icon = iconName;
+      });
+    });
+
+    iconGrid.append(button);
   });
 }
 
@@ -67,10 +125,13 @@ function getSelectedNode() {
 }
 
 function setFormDisabled(isDisabled) {
-  [titleInput, descriptionInput, iconSelect, xInput, yInput].forEach((field) => {
+  [titleInput, descriptionInput, xInput, yInput].forEach((field) => {
     field.disabled = isDisabled;
   });
   deleteNodeButton.disabled = isDisabled;
+  iconGrid.querySelectorAll(".icon-choice").forEach((button) => {
+    button.disabled = isDisabled;
+  });
 }
 
 function updateExport() {
@@ -102,20 +163,30 @@ function updateForm() {
     panelTitle.textContent = "No node selected";
     titleInput.value = "";
     descriptionInput.value = "";
-    iconSelect.value = ICONS[0];
     xInput.value = "";
     yInput.value = "";
     setFormDisabled(true);
+    updateIconPicker();
     return;
   }
 
   panelTitle.textContent = node.title || node.id;
   titleInput.value = node.title;
   descriptionInput.value = node.description;
-  iconSelect.value = node.icon;
   xInput.value = node.x;
   yInput.value = node.y;
   setFormDisabled(false);
+  updateIconPicker();
+}
+
+function updateIconPicker() {
+  const selectedNode = getSelectedNode();
+
+  iconGrid.querySelectorAll(".icon-choice").forEach((button) => {
+    const isSelected = selectedNode?.icon === button.dataset.iconName;
+    button.classList.toggle("is-selected", isSelected);
+    button.setAttribute("aria-selected", isSelected ? "true" : "false");
+  });
 }
 
 function updateSelectedNodeStyles() {
@@ -135,11 +206,7 @@ function createNodeElement(node) {
   icon.alt = "";
   icon.src = getIconPath(node.icon);
 
-  const label = document.createElement("span");
-  label.className = "map-node-label";
-  label.textContent = node.title;
-
-  button.append(icon, label);
+  button.append(icon);
 
   button.addEventListener("click", () => {
     selectedNodeId = node.id;
@@ -198,7 +265,6 @@ function render() {
     }
 
     nodeElement.querySelector("img").src = getIconPath(node.icon);
-    nodeElement.querySelector(".map-node-label").textContent = node.title;
     mapCanvas.append(nodeElement);
   });
 
@@ -236,6 +302,14 @@ function syncSelectedNode(mutator) {
 
 saveNodesButton.addEventListener("click", () => {
   persistNodes();
+});
+
+zoomInButton.addEventListener("click", () => {
+  setScale(scale + ZOOM_STEP);
+});
+
+zoomOutButton.addEventListener("click", () => {
+  setScale(scale - ZOOM_STEP);
 });
 
 addNodeButton.addEventListener("click", () => {
@@ -283,12 +357,6 @@ descriptionInput.addEventListener("input", () => {
   });
 });
 
-iconSelect.addEventListener("change", () => {
-  syncSelectedNode((node) => {
-    node.icon = iconSelect.value;
-  });
-});
-
 xInput.addEventListener("input", () => {
   syncSelectedNode((node) => {
     node.x = formatCoordinate(clamp(Number(xInput.value) || 0, 0, 100));
@@ -316,16 +384,22 @@ copyJsonButton.addEventListener("click", async () => {
   }
 });
 
-populateIconSelect();
+populateIconPicker();
 setFormDisabled(true);
 updateExport();
 setDirtyState(false);
 
 window.addEventListener("load", () => {
+  scale = getMinScale();
+  resizeCanvas(scale);
   mapViewport.scrollLeft = Math.max(0, (mapCanvas.scrollWidth - mapViewport.clientWidth) / 2);
   mapViewport.scrollTop = Math.max(0, (mapCanvas.scrollHeight - mapViewport.clientHeight) / 2);
   selectedNodeId = nodes[0]?.id ?? null;
   render();
+});
+
+window.addEventListener("resize", () => {
+  setScale(scale);
 });
 
 window.addEventListener("storage", (event) => {

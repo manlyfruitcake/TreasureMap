@@ -30,6 +30,15 @@
           <button class="secondary-button" type="button" id="resetNodesButton">Reset to defaults</button>
         </div>
         <p class="save-status" id="saveStatus" aria-live="polite">All changes saved</p>
+
+        <section class="icon-panel" aria-label="Icon picker">
+          <div class="details-header">
+            <p class="eyebrow">Icon Picker</p>
+            <h2>Node Icons</h2>
+          </div>
+          <p class="icon-panel-copy">Select a node, then choose its icon here.</p>
+          <div class="icon-grid" id="iconGrid" role="listbox" aria-label="Available node icons"></div>
+        </section>
       </section>
 
       <section class="map-workspace" aria-label="Map editing workspace">
@@ -38,7 +47,17 @@
             <p class="eyebrow">Canvas</p>
             <h2>Area Placement</h2>
           </div>
-          <p class="workspace-note">Assets loaded from <code>../images</code> and <code>../Icons</code>.</p>
+          <div class="workspace-tools">
+            <p class="workspace-note">Assets loaded from <code>../images</code> and <code>../Icons</code>.</p>
+            <div class="zoom-controls" aria-label="Map zoom controls">
+              <button class="secondary-button zoom-button" type="button" id="zoomOutButton" aria-label="Zoom out">
+                −
+              </button>
+              <button class="secondary-button zoom-button" type="button" id="zoomInButton" aria-label="Zoom in">
+                +
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="map-viewport" id="mapViewport">
@@ -69,11 +88,6 @@
               placeholder="Describe the area here"
               disabled
             ></textarea>
-          </label>
-
-          <label class="field">
-            <span>Icon</span>
-            <select id="nodeIcon" name="icon" disabled></select>
           </label>
 
           <div class="coordinates">
