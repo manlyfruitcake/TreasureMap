@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f2d89d" />
+      <stop offset="100%" stop-color="#8e6748" />
+    </linearGradient>
+  </defs>
+  <rect width="960" height="640" rx="40" fill="url(#bg)" />
+  <circle cx="730" cy="160" r="86" fill="rgba(255,255,255,0.18)" />
+  <circle cx="210" cy="510" r="118" fill="rgba(255,255,255,0.14)" />
+  <path d="M110 430c88-118 196-176 324-176 122 0 220 44 312 138" fill="none" stroke="rgba(255,255,255,0.45)" stroke-linecap="round" stroke-width="28" />
+  <text x="92" y="164" fill="#fff8ea" font-family="Baloo 2, Arial, sans-serif" font-size="72" font-weight="700">Location Image</text>
+  <text x="92" y="228" fill="rgba(255,248,234,0.92)" font-family="Nunito, Arial, sans-serif" font-size="36">Placeholder for area preview</text>
+</svg>

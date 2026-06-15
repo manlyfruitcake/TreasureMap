@@ -1,5 +1,6 @@
 (function attachTreasureMapData(global) {
-  const STORAGE_KEY = "treasure-map:nodes";
+  const NODES_STORAGE_KEY = "treasure-map:nodes";
+  const TEAMS_STORAGE_KEY = "treasure-map:teams";
 
   const ICONS = [
     "iconBallroom.png",
@@ -21,6 +22,8 @@
     "iconSeasideTerrace.png",
   ];
 
+  const DEFAULT_LOCATION_IMAGE = "placeholder.svg";
+
   const DEFAULT_NODES = [
     {
       id: "area-1",
@@ -28,13 +31,51 @@
       description:
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam eu turpis molestie, dictum est a, mattis tellus. Sed dignissim, metus nec fringilla accumsan, risus sem sollicitudin lacus, ut interdum tellus elit sed risus.",
       icon: "iconRestaurant.png",
+      image: DEFAULT_LOCATION_IMAGE,
       x: 48,
       y: 43,
     },
   ];
 
+  function createPlaceholderImage(teamIndex) {
+    const hue = (teamIndex * 27) % 360;
+    const label = `Team ${teamIndex + 1}`;
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+        <defs>
+          <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="hsl(${hue} 75% 72%)" />
+            <stop offset="100%" stop-color="hsl(${(hue + 38) % 360} 65% 42%)" />
+          </linearGradient>
+        </defs>
+        <rect width="320" height="200" rx="28" fill="url(#g)" />
+        <circle cx="250" cy="56" r="38" fill="rgba(255,255,255,0.18)" />
+        <circle cx="78" cy="156" r="52" fill="rgba(255,255,255,0.12)" />
+        <path d="M48 146c24-34 60-54 110-54s88 20 114 54" fill="none" stroke="rgba(255,255,255,0.48)" stroke-width="14" stroke-linecap="round" />
+        <text x="34" y="52" fill="white" font-family="Baloo 2, Arial, sans-serif" font-size="28" font-weight="700">${label}</text>
+        <text x="34" y="88" fill="rgba(255,255,255,0.88)" font-family="Nunito, Arial, sans-serif" font-size="18">Placeholder Graphic</text>
+      </svg>
+    `.trim();
+
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  }
+
+  const DEFAULT_TEAMS = Array.from({ length: 13 }, (_, index) => ({
+    id: `team-${index + 1}`,
+    name: `Team ${index + 1}`,
+    image: createPlaceholderImage(index),
+    members: [`Member ${index + 1}A`, `Member ${index + 1}B`, `Member ${index + 1}C`],
+  }));
+
   function cloneNodes(nodes) {
     return nodes.map((node) => ({ ...node }));
+  }
+
+  function cloneTeams(teams) {
+    return teams.map((team) => ({
+      ...team,
+      members: Array.isArray(team.members) ? [...team.members] : [],
+    }));
   }
 
   function normalizeNode(node, index) {
@@ -47,14 +88,31 @@
       title: typeof node.title === "string" && node.title.trim() ? node.title : `Area ${index + 1}`,
       description: typeof node.description === "string" ? node.description : "",
       icon: typeof node.icon === "string" && ICONS.includes(node.icon) ? node.icon : fallbackIcon,
+      image: typeof node.image === "string" && node.image.trim() ? node.image : DEFAULT_LOCATION_IMAGE,
       x: Number.isFinite(x) ? x : 50,
       y: Number.isFinite(y) ? y : 50,
     };
   }
 
+  function normalizeTeam(team, index) {
+    const fallbackTeam = DEFAULT_TEAMS[index] ?? DEFAULT_TEAMS[0];
+    const members = Array.isArray(team.members)
+      ? team.members
+          .map((member) => (typeof member === "string" ? member.trim() : ""))
+          .filter(Boolean)
+      : fallbackTeam.members;
+
+    return {
+      id: typeof team.id === "string" && team.id.trim() ? team.id : fallbackTeam.id,
+      name: typeof team.name === "string" && team.name.trim() ? team.name : fallbackTeam.name,
+      image: typeof team.image === "string" && team.image.trim() ? team.image : fallbackTeam.image,
+      members: members.length ? members : [...fallbackTeam.members],
+    };
+  }
+
   function loadNodes() {
     try {
-      const raw = global.localStorage.getItem(STORAGE_KEY);
+      const raw = global.localStorage.getItem(NODES_STORAGE_KEY);
 
       if (!raw) {
         return cloneNodes(DEFAULT_NODES);
@@ -74,21 +132,59 @@
 
   function saveNodes(nodes) {
     const normalized = Array.isArray(nodes) ? nodes.map(normalizeNode) : cloneNodes(DEFAULT_NODES);
-    global.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    global.localStorage.setItem(NODES_STORAGE_KEY, JSON.stringify(normalized));
     return normalized;
   }
 
   function resetNodes() {
-    global.localStorage.removeItem(STORAGE_KEY);
+    global.localStorage.removeItem(NODES_STORAGE_KEY);
     return cloneNodes(DEFAULT_NODES);
   }
 
+  function loadTeams() {
+    try {
+      const raw = global.localStorage.getItem(TEAMS_STORAGE_KEY);
+
+      if (!raw) {
+        return cloneTeams(DEFAULT_TEAMS);
+      }
+
+      const parsed = JSON.parse(raw);
+
+      if (!Array.isArray(parsed)) {
+        return cloneTeams(DEFAULT_TEAMS);
+      }
+
+      const normalized = DEFAULT_TEAMS.map((team, index) => normalizeTeam(parsed[index] ?? team, index));
+      return normalized;
+    } catch {
+      return cloneTeams(DEFAULT_TEAMS);
+    }
+  }
+
+  function saveTeams(teams) {
+    const normalized = DEFAULT_TEAMS.map((team, index) => normalizeTeam(Array.isArray(teams) ? teams[index] ?? team : team, index));
+    global.localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(normalized));
+    return normalized;
+  }
+
+  function resetTeams() {
+    global.localStorage.removeItem(TEAMS_STORAGE_KEY);
+    return cloneTeams(DEFAULT_TEAMS);
+  }
+
   global.TreasureMapData = {
-    STORAGE_KEY,
+    NODES_STORAGE_KEY,
+    TEAMS_STORAGE_KEY,
     ICONS,
+    DEFAULT_LOCATION_IMAGE,
     DEFAULT_NODES,
+    DEFAULT_TEAMS,
     loadNodes,
     saveNodes,
     resetNodes,
+    loadTeams,
+    saveTeams,
+    resetTeams,
   };
 })(window);

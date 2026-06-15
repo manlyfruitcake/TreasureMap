@@ -15,20 +15,45 @@
   <body>
     <main class="app-shell">
       <section class="phone-frame" aria-label="Interactive treasure map">
+        <section class="landing-screen" id="landingScreen" aria-label="Team selection">
+          <div class="landing-backdrop"></div>
+          <div class="landing-content">
+            <p class="landing-kicker">Before You Sail</p>
+            <h1 class="landing-title">Choose Your Team</h1>
+            <p class="landing-copy">
+              Pick the team you belong to. You’ll see the roster before opening the map.
+            </p>
+            <div class="team-grid" id="teamGrid"></div>
+          </div>
+        </section>
+
+        <section class="team-modal hidden" id="teamModal" aria-hidden="true">
+          <div class="team-modal-backdrop" data-close-team-modal="true"></div>
+          <article class="team-modal-card" role="dialog" aria-modal="true" aria-labelledby="teamModalTitle">
+            <button class="close-button" type="button" id="closeTeamModalButton" aria-label="Close team details">
+              ×
+            </button>
+            <img class="team-modal-image" id="teamModalImage" alt="" />
+            <h2 id="teamModalTitle">Team 1</h2>
+            <ul class="team-member-list" id="teamMemberList"></ul>
+            <button class="open-map-button" type="button" id="openMapButton">Open Map</button>
+          </article>
+        </section>
+
         <header class="map-title">The One Piece Map</header>
 
-        <div class="map-viewport" id="mapViewport">
+        <div class="map-viewport is-blurred" id="mapViewport">
           <div class="map-canvas">
             <img class="map-image" src="./images/map.png" alt="Illustrated treasure map" />
           </div>
         </div>
 
-        <div class="zoom-controls" aria-label="Map zoom controls">
+        <div class="zoom-controls hidden" id="mapZoomControls" aria-label="Map zoom controls">
           <button class="zoom-button" type="button" id="zoomInButton" aria-label="Zoom in">+</button>
           <button class="zoom-button" type="button" id="zoomOutButton" aria-label="Zoom out">−</button>
         </div>
 
-        <aside class="hint-card" id="hintCard">
+        <aside class="hint-card hidden" id="hintCard">
           <h2>Ay ay, Captain!</h2>
           <p>Click on the nodes to reveal the secret</p>
         </aside>
@@ -41,7 +66,7 @@
             </button>
             <h2 id="infoTitle">Seventh Hell</h2>
             <div class="image-placeholder">
-              <span>Image coming later</span>
+              <img id="infoImage" alt="" />
             </div>
             <p id="infoDescription">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam eu turpis molestie,

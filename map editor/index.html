@@ -31,14 +31,24 @@
         </div>
         <p class="save-status" id="saveStatus" aria-live="polite">All changes saved</p>
 
-        <section class="icon-panel" aria-label="Icon picker">
-          <div class="details-header">
-            <p class="eyebrow">Icon Picker</p>
-            <h2>Node Icons</h2>
+        <section class="export-panel" aria-label="Node export data">
+          <div class="export-header">
+            <p class="eyebrow">Export</p>
+            <button class="secondary-button" type="button" id="copyJsonButton">Copy JSON</button>
           </div>
-          <p class="icon-panel-copy">Select a node, then choose its icon here.</p>
-          <div class="icon-grid" id="iconGrid" role="listbox" aria-label="Available node icons"></div>
+          <textarea id="exportOutput" rows="14" readonly></textarea>
         </section>
+      </section>
+
+      <section class="editor-topbar">
+        <div class="editor-tabs" role="tablist" aria-label="Editor modes">
+          <button class="editor-tab is-active" type="button" id="mapTabButton" role="tab" aria-selected="true">
+            Edit Map
+          </button>
+          <button class="editor-tab" type="button" id="teamsTabButton" role="tab" aria-selected="false">
+            Edit Teams
+          </button>
+        </div>
       </section>
 
       <section class="map-workspace" aria-label="Map editing workspace">
@@ -67,7 +77,18 @@
         </div>
       </section>
 
-      <aside class="editor-panel details-panel" aria-label="Selected node details">
+      <section class="editor-panel team-workspace hidden" id="teamWorkspace" aria-label="Team editing workspace">
+        <div class="workspace-header">
+          <div>
+            <p class="eyebrow">Teams</p>
+            <h2>Team Directory</h2>
+          </div>
+          <p class="workspace-note">Select a team card to edit its name, image, and member list.</p>
+        </div>
+        <div class="team-picker-grid" id="teamPickerGrid"></div>
+      </section>
+
+      <aside class="editor-panel details-panel" id="mapDetailsPanel" aria-label="Selected node details">
         <div class="details-header">
           <p class="eyebrow">Node Details</p>
           <h2 id="panelTitle">No node selected</h2>
@@ -90,6 +111,30 @@
             ></textarea>
           </label>
 
+          <div class="details-header compact-header">
+            <p class="eyebrow">Preview Image</p>
+            <h2>Location Image</h2>
+          </div>
+
+          <div class="node-image-preview">
+            <img id="nodeImagePreview" alt="" />
+          </div>
+
+          <label class="field">
+            <span>Location image</span>
+            <input id="nodeImageFile" type="file" accept="image/*" disabled />
+          </label>
+
+          <button class="secondary-button" type="button" id="resetNodeImageButton" disabled>
+            Use placeholder image
+          </button>
+
+          <div class="details-header compact-header">
+            <p class="eyebrow">Icon Picker</p>
+            <h2>Node Icons</h2>
+          </div>
+          <div class="icon-grid" id="iconGrid" role="listbox" aria-label="Available node icons"></div>
+
           <div class="coordinates">
             <label class="field">
               <span>X (%)</span>
@@ -103,13 +148,37 @@
           </div>
         </form>
 
-        <section class="export-panel" aria-label="Node export data">
-          <div class="export-header">
-            <p class="eyebrow">Export</p>
-            <button class="secondary-button" type="button" id="copyJsonButton">Copy JSON</button>
+      </aside>
+
+      <aside class="editor-panel details-panel hidden" id="teamDetailsPanel" aria-label="Selected team details">
+        <div class="details-header">
+          <div class="details-header">
+            <p class="eyebrow">Team Details</p>
+            <h2 id="teamPanelTitle">Team 1</h2>
           </div>
-          <textarea id="exportOutput" rows="14" readonly></textarea>
-        </section>
+        </div>
+        <form class="details-form" id="teamForm">
+          <label class="field">
+            <span>Team name</span>
+            <input id="teamName" type="text" placeholder="Team name" />
+          </label>
+
+          <div class="team-image-preview">
+            <img id="teamImagePreview" alt="" />
+          </div>
+
+          <label class="field">
+            <span>Team image</span>
+            <input id="teamImageFile" type="file" accept="image/*" />
+          </label>
+
+          <button class="secondary-button" type="button" id="resetTeamImageButton">Use placeholder image</button>
+
+          <label class="field">
+            <span>Team members (one per line)</span>
+            <textarea id="teamMembers" rows="10" placeholder="Member names"></textarea>
+          </label>
+        </form>
       </aside>
     </main>
 

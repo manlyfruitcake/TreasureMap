@@ -1,6 +1,16 @@
 const viewport = document.getElementById("mapViewport");
 const mapCanvas = document.querySelector(".map-canvas");
 const modal = document.getElementById("infoModal");
+const landingScreen = document.getElementById("landingScreen");
+const teamGrid = document.getElementById("teamGrid");
+const teamModal = document.getElementById("teamModal");
+const teamModalImage = document.getElementById("teamModalImage");
+const teamMemberList = document.getElementById("teamMemberList");
+const closeTeamModalButton = document.getElementById("closeTeamModalButton");
+const openMapButton = document.getElementById("openMapButton");
+const mapZoomControls = document.getElementById("mapZoomControls");
+const hintCard = document.getElementById("hintCard");
+const infoImage = document.getElementById("infoImage");
 const title = document.getElementById("infoTitle");
 const description = document.getElementById("infoDescription");
 const closeModalButton = document.getElementById("closeModalButton");
@@ -12,11 +22,14 @@ const BASE_HEIGHT = 852;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 2;
 const ZOOM_STEP = 0.1;
-const { loadNodes, STORAGE_KEY } = window.TreasureMapData;
+const { loadNodes, loadTeams, NODES_STORAGE_KEY, TEAMS_STORAGE_KEY } = window.TreasureMapData;
 
 let scale = 1;
 let pinchState = null;
 let nodes = loadNodes();
+let teams = loadTeams();
+let selectedTeamId = null;
+let mapUnlocked = false;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -80,8 +93,16 @@ function getNodeById(nodeId) {
   return nodes.find((node) => node.id === nodeId) ?? null;
 }
 
+function getTeamById(teamId) {
+  return teams.find((team) => team.id === teamId) ?? null;
+}
+
 function getIconPath(fileName) {
   return `./Icons/${fileName}`;
+}
+
+function getLocationImagePath(fileName) {
+  return fileName.startsWith("data:") ? fileName : `./images/Location/${fileName}`;
 }
 
 function renderNodes() {
@@ -106,6 +127,70 @@ function renderNodes() {
   });
 }
 
+function renderTeams() {
+  teamGrid.replaceChildren();
+
+  teams.forEach((team) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "team-card";
+    button.dataset.teamId = team.id;
+
+    const graphic = document.createElement("span");
+    graphic.className = "team-card-graphic";
+
+    const image = document.createElement("img");
+    image.src = team.image;
+    image.alt = "";
+
+    const label = document.createElement("span");
+    label.className = "team-card-name";
+    label.textContent = team.name;
+
+    graphic.append(image);
+    button.append(graphic, label);
+    button.addEventListener("click", () => openTeamModal(team.id));
+    teamGrid.append(button);
+  });
+}
+
+function openTeamModal(teamId) {
+  const team = getTeamById(teamId);
+
+  if (!team) {
+    return;
+  }
+
+  selectedTeamId = team.id;
+  teamModalImage.src = team.image;
+  teamModalImage.alt = `${team.name} graphic`;
+  document.getElementById("teamModalTitle").textContent = team.name;
+  teamMemberList.replaceChildren();
+
+  team.members.forEach((member) => {
+    const item = document.createElement("li");
+    item.textContent = member;
+    teamMemberList.append(item);
+  });
+
+  teamModal.classList.remove("hidden");
+  teamModal.setAttribute("aria-hidden", "false");
+}
+
+function closeTeamModal() {
+  teamModal.classList.add("hidden");
+  teamModal.setAttribute("aria-hidden", "true");
+}
+
+function unlockMap() {
+  mapUnlocked = true;
+  landingScreen.classList.add("hidden");
+  closeTeamModal();
+  viewport.classList.remove("is-blurred");
+  mapZoomControls.classList.remove("hidden");
+  hintCard.classList.remove("hidden");
+}
+
 function openModal(nodeId) {
   const node = getNodeById(nodeId);
 
@@ -115,6 +200,8 @@ function openModal(nodeId) {
 
   title.textContent = node.title;
   description.textContent = node.description;
+  infoImage.src = getLocationImagePath(node.image);
+  infoImage.alt = `${node.title} preview`;
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
@@ -133,6 +220,14 @@ modal.addEventListener("click", (event) => {
 });
 
 closeModalButton.addEventListener("click", closeModal);
+closeTeamModalButton.addEventListener("click", closeTeamModal);
+openMapButton.addEventListener("click", unlockMap);
+
+teamModal.addEventListener("click", (event) => {
+  if (event.target instanceof HTMLElement && event.target.dataset.closeTeamModal === "true") {
+    closeTeamModal();
+  }
+});
 
 zoomInButton.addEventListener("click", () => {
   setScale(scale + ZOOM_STEP);
@@ -204,7 +299,9 @@ viewport.addEventListener("touchcancel", () => {
 
 window.addEventListener("load", () => {
   nodes = loadNodes();
+  teams = loadTeams();
   renderNodes();
+  renderTeams();
   scale = getMinScale();
   resizeCanvas(scale);
   centerViewportOn(BASE_WIDTH / 2, BASE_HEIGHT / 2);
@@ -215,14 +312,21 @@ window.addEventListener("resize", () => {
 });
 
 window.addEventListener("storage", (event) => {
-  if (event.key !== STORAGE_KEY) {
-    return;
+  if (event.key === NODES_STORAGE_KEY) {
+    nodes = loadNodes();
+    renderNodes();
+
+    if (!modal.classList.contains("hidden")) {
+      closeModal();
+    }
   }
 
-  nodes = loadNodes();
-  renderNodes();
+  if (event.key === TEAMS_STORAGE_KEY) {
+    teams = loadTeams();
+    renderTeams();
 
-  if (!modal.classList.contains("hidden")) {
-    closeModal();
+    if (!teamModal.classList.contains("hidden") && selectedTeamId) {
+      openTeamModal(selectedTeamId);
+    }
   }
 });

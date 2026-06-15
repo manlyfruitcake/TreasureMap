@@ -1,7 +1,14 @@
 const mapViewport = document.getElementById("mapViewport");
 const mapCanvas = document.getElementById("mapCanvas");
 const mapImage = mapCanvas.querySelector(".map-image");
+const mapWorkspace = document.querySelector(".map-workspace");
+const teamWorkspace = document.getElementById("teamWorkspace");
+const mapDetailsPanel = document.getElementById("mapDetailsPanel");
+const teamDetailsPanel = document.getElementById("teamDetailsPanel");
 const iconGrid = document.getElementById("iconGrid");
+const teamPickerGrid = document.getElementById("teamPickerGrid");
+const mapTabButton = document.getElementById("mapTabButton");
+const teamsTabButton = document.getElementById("teamsTabButton");
 const saveNodesButton = document.getElementById("saveNodesButton");
 const zoomInButton = document.getElementById("zoomInButton");
 const zoomOutButton = document.getElementById("zoomOutButton");
@@ -11,25 +18,55 @@ const resetNodesButton = document.getElementById("resetNodesButton");
 const copyJsonButton = document.getElementById("copyJsonButton");
 const saveStatus = document.getElementById("saveStatus");
 const panelTitle = document.getElementById("panelTitle");
+const teamPanelTitle = document.getElementById("teamPanelTitle");
 const titleInput = document.getElementById("nodeTitle");
 const descriptionInput = document.getElementById("nodeDescription");
 const xInput = document.getElementById("nodeX");
 const yInput = document.getElementById("nodeY");
+const nodeImageFileInput = document.getElementById("nodeImageFile");
+const nodeImagePreview = document.getElementById("nodeImagePreview");
+const resetNodeImageButton = document.getElementById("resetNodeImageButton");
+const teamNameInput = document.getElementById("teamName");
+const teamImageFileInput = document.getElementById("teamImageFile");
+const teamImagePreview = document.getElementById("teamImagePreview");
+const resetTeamImageButton = document.getElementById("resetTeamImageButton");
+const teamMembersInput = document.getElementById("teamMembers");
 const exportOutput = document.getElementById("exportOutput");
-const { ICONS, DEFAULT_NODES, loadNodes, saveNodes, STORAGE_KEY } = window.TreasureMapData;
+const {
+  ICONS,
+  DEFAULT_LOCATION_IMAGE,
+  DEFAULT_NODES,
+  DEFAULT_TEAMS,
+  loadNodes,
+  saveNodes,
+  loadTeams,
+  saveTeams,
+  NODES_STORAGE_KEY,
+  TEAMS_STORAGE_KEY,
+} = window.TreasureMapData;
 const BASE_WIDTH = 1215;
 const BASE_HEIGHT = 852;
 const MAX_SCALE = 2;
 const ZOOM_STEP = 0.1;
 
 let nodes = loadNodes();
+let teams = loadTeams();
 let selectedNodeId = null;
+let selectedTeamId = teams[0]?.id ?? null;
 let dragState = null;
 let isDirty = false;
 let scale = 1;
+let activeTab = "map";
 
 function cloneNodes(nodeList) {
   return nodeList.map((node) => ({ ...node }));
+}
+
+function cloneTeams(teamList) {
+  return teamList.map((team) => ({
+    ...team,
+    members: [...team.members],
+  }));
 }
 
 function createDefaultNode(x, y) {
@@ -50,6 +87,10 @@ function createDefaultNode(x, y) {
 
 function getIconPath(fileName) {
   return `../Icons/${fileName}`;
+}
+
+function getLocationImagePath(fileName) {
+  return fileName.startsWith("data:") ? fileName : `../images/Location/${fileName}`;
 }
 
 function clamp(value, min, max) {
@@ -124,18 +165,23 @@ function getSelectedNode() {
   return nodes.find((node) => node.id === selectedNodeId) ?? null;
 }
 
+function getSelectedTeam() {
+  return teams.find((team) => team.id === selectedTeamId) ?? null;
+}
+
 function setFormDisabled(isDisabled) {
-  [titleInput, descriptionInput, xInput, yInput].forEach((field) => {
+  [titleInput, descriptionInput, xInput, yInput, nodeImageFileInput].forEach((field) => {
     field.disabled = isDisabled;
   });
   deleteNodeButton.disabled = isDisabled;
+  resetNodeImageButton.disabled = isDisabled;
   iconGrid.querySelectorAll(".icon-choice").forEach((button) => {
     button.disabled = isDisabled;
   });
 }
 
 function updateExport() {
-  exportOutput.value = JSON.stringify(nodes, null, 2);
+  exportOutput.value = JSON.stringify({ nodes, teams }, null, 2);
 }
 
 function setDirtyState(nextDirty, message = nextDirty ? "Unsaved changes" : "All changes saved") {
@@ -152,6 +198,7 @@ function markDirty() {
 
 function persistNodes(message = "Changes saved to main app") {
   nodes = saveNodes(nodes);
+  teams = saveTeams(teams);
   updateExport();
   setDirtyState(false, message);
 }
@@ -165,6 +212,8 @@ function updateForm() {
     descriptionInput.value = "";
     xInput.value = "";
     yInput.value = "";
+    nodeImagePreview.src = getLocationImagePath(DEFAULT_LOCATION_IMAGE);
+    nodeImagePreview.alt = "Location placeholder preview";
     setFormDisabled(true);
     updateIconPicker();
     return;
@@ -175,8 +224,32 @@ function updateForm() {
   descriptionInput.value = node.description;
   xInput.value = node.x;
   yInput.value = node.y;
+  nodeImagePreview.src = getLocationImagePath(node.image);
+  nodeImagePreview.alt = `${node.title} preview`;
   setFormDisabled(false);
   updateIconPicker();
+}
+
+function updateTeamPicker() {
+  teamPickerGrid.querySelectorAll(".team-choice").forEach((button) => {
+    const isSelected = button.dataset.teamId === selectedTeamId;
+    button.classList.toggle("is-selected", isSelected);
+  });
+}
+
+function updateTeamForm() {
+  const team = getSelectedTeam();
+
+  if (!team) {
+    return;
+  }
+
+  teamPanelTitle.textContent = team.name;
+  teamNameInput.value = team.name;
+  teamImagePreview.src = team.image;
+  teamImagePreview.alt = `${team.name} graphic`;
+  teamMembersInput.value = team.members.join("\n");
+  updateTeamPicker();
 }
 
 function updateIconPicker() {
@@ -193,6 +266,52 @@ function updateSelectedNodeStyles() {
   mapCanvas.querySelectorAll(".map-node").forEach((nodeElement) => {
     nodeElement.classList.toggle("is-selected", nodeElement.dataset.nodeId === selectedNodeId);
   });
+}
+
+function populateTeamPicker() {
+  teams.forEach((team) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "team-choice";
+    button.dataset.teamId = team.id;
+
+    const image = document.createElement("img");
+    image.src = team.image;
+    image.alt = "";
+
+    const label = document.createElement("span");
+    label.className = "team-choice-name";
+    label.textContent = team.name;
+
+    button.append(image, label);
+    button.addEventListener("click", () => {
+      selectedTeamId = team.id;
+      updateTeamForm();
+    });
+
+    teamPickerGrid.append(button);
+  });
+}
+
+function renderTeamPicker() {
+  teamPickerGrid.replaceChildren();
+  populateTeamPicker();
+  updateTeamForm();
+}
+
+function setActiveTab(nextTab) {
+  activeTab = nextTab;
+  const isMapTab = nextTab === "map";
+
+  mapWorkspace.classList.toggle("hidden", !isMapTab);
+  mapDetailsPanel.classList.toggle("hidden", !isMapTab);
+  teamWorkspace.classList.toggle("hidden", isMapTab);
+  teamDetailsPanel.classList.toggle("hidden", isMapTab);
+
+  mapTabButton.classList.toggle("is-active", isMapTab);
+  teamsTabButton.classList.toggle("is-active", !isMapTab);
+  mapTabButton.setAttribute("aria-selected", isMapTab ? "true" : "false");
+  teamsTabButton.setAttribute("aria-selected", isMapTab ? "false" : "true");
 }
 
 function createNodeElement(node) {
@@ -269,6 +388,7 @@ function render() {
   });
 
   updateForm();
+  renderTeamPicker();
   updateExport();
 }
 
@@ -300,8 +420,29 @@ function syncSelectedNode(mutator) {
   render();
 }
 
+function syncSelectedTeam(mutator) {
+  const team = getSelectedTeam();
+
+  if (!team) {
+    return;
+  }
+
+  mutator(team);
+  markDirty();
+  renderTeamPicker();
+  updateExport();
+}
+
 saveNodesButton.addEventListener("click", () => {
   persistNodes();
+});
+
+mapTabButton.addEventListener("click", () => {
+  setActiveTab("map");
+});
+
+teamsTabButton.addEventListener("click", () => {
+  setActiveTab("teams");
 });
 
 zoomInButton.addEventListener("click", () => {
@@ -331,7 +472,9 @@ deleteNodeButton.addEventListener("click", () => {
 
 resetNodesButton.addEventListener("click", () => {
   nodes = cloneNodes(DEFAULT_NODES);
+  teams = cloneTeams(DEFAULT_TEAMS);
   selectedNodeId = nodes[0]?.id ?? null;
+  selectedTeamId = teams[0]?.id ?? null;
   markDirty();
   render();
 });
@@ -357,6 +500,37 @@ descriptionInput.addEventListener("input", () => {
   });
 });
 
+nodeImageFileInput.addEventListener("change", async () => {
+  const file = nodeImageFileInput.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+  if (typeof dataUrl !== "string") {
+    return;
+  }
+
+  syncSelectedNode((node) => {
+    node.image = dataUrl;
+  });
+
+  nodeImageFileInput.value = "";
+});
+
+resetNodeImageButton.addEventListener("click", () => {
+  syncSelectedNode((node) => {
+    node.image = DEFAULT_LOCATION_IMAGE;
+  });
+});
+
 xInput.addEventListener("input", () => {
   syncSelectedNode((node) => {
     node.x = formatCoordinate(clamp(Number(xInput.value) || 0, 0, 100));
@@ -366,6 +540,58 @@ xInput.addEventListener("input", () => {
 yInput.addEventListener("input", () => {
   syncSelectedNode((node) => {
     node.y = formatCoordinate(clamp(Number(yInput.value) || 0, 0, 100));
+  });
+});
+
+teamNameInput.addEventListener("input", () => {
+  syncSelectedTeam((team) => {
+    team.name = teamNameInput.value.trim() || team.id;
+  });
+});
+
+teamMembersInput.addEventListener("input", () => {
+  syncSelectedTeam((team) => {
+    team.members = teamMembersInput.value
+      .split("\n")
+      .map((member) => member.trim())
+      .filter(Boolean);
+  });
+});
+
+teamImageFileInput.addEventListener("change", async () => {
+  const file = teamImageFileInput.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+  if (typeof dataUrl !== "string") {
+    return;
+  }
+
+  syncSelectedTeam((team) => {
+    team.image = dataUrl;
+  });
+
+  teamImageFileInput.value = "";
+});
+
+resetTeamImageButton.addEventListener("click", () => {
+  const selectedIndex = teams.findIndex((team) => team.id === selectedTeamId);
+
+  if (selectedIndex === -1) {
+    return;
+  }
+
+  syncSelectedTeam((team) => {
+    team.image = DEFAULT_TEAMS[selectedIndex].image;
   });
 });
 
@@ -388,6 +614,7 @@ populateIconPicker();
 setFormDisabled(true);
 updateExport();
 setDirtyState(false);
+setActiveTab("map");
 
 window.addEventListener("load", () => {
   scale = getMinScale();
@@ -395,6 +622,7 @@ window.addEventListener("load", () => {
   mapViewport.scrollLeft = Math.max(0, (mapCanvas.scrollWidth - mapViewport.clientWidth) / 2);
   mapViewport.scrollTop = Math.max(0, (mapCanvas.scrollHeight - mapViewport.clientHeight) / 2);
   selectedNodeId = nodes[0]?.id ?? null;
+  selectedTeamId = teams[0]?.id ?? null;
   render();
 });
 
@@ -403,19 +631,25 @@ window.addEventListener("resize", () => {
 });
 
 window.addEventListener("storage", (event) => {
-  if (event.key !== STORAGE_KEY) {
-    return;
-  }
-
   if (isDirty) {
     setDirtyState(true, "Unsaved changes in editor. External saved data is available.");
     return;
   }
 
-  nodes = loadNodes();
+  if (event.key === NODES_STORAGE_KEY) {
+    nodes = loadNodes();
+  }
+
+  if (event.key === TEAMS_STORAGE_KEY) {
+    teams = loadTeams();
+  }
 
   if (!nodes.some((node) => node.id === selectedNodeId)) {
     selectedNodeId = nodes[0]?.id ?? null;
+  }
+
+  if (!teams.some((team) => team.id === selectedTeamId)) {
+    selectedTeamId = teams[0]?.id ?? null;
   }
 
   render();
