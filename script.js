@@ -2,7 +2,9 @@ const viewport = document.getElementById("mapViewport");
 const mapCanvas = document.querySelector(".map-canvas");
 const modal = document.getElementById("infoModal");
 const landingScreen = document.getElementById("landingScreen");
-const teamGrid = document.getElementById("teamGrid");
+const teamGridTrack = document.getElementById("teamGridTrack");
+const teamGridViewport = document.getElementById("teamGridViewport");
+const teamPageDots = document.getElementById("teamPageDots");
 const teamModal = document.getElementById("teamModal");
 const teamModalImage = document.getElementById("teamModalImage");
 const teamMemberList = document.getElementById("teamMemberList");
@@ -30,6 +32,10 @@ let nodes = loadNodes();
 let teams = loadTeams();
 let selectedTeamId = null;
 let mapUnlocked = false;
+let dragPanState = null;
+let currentTeamPage = 0;
+let teamSwipeState = null;
+const TEAMS_PER_PAGE = 6;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -97,6 +103,37 @@ function getTeamById(teamId) {
   return teams.find((team) => team.id === teamId) ?? null;
 }
 
+function getTeamRingColor(teamId) {
+  const match = /(\d+)$/.exec(teamId);
+  const palette = [
+    "#6ddc44",
+    "#ffd84d",
+    "#ff6ce1",
+    "#171717",
+    "#6f34cc",
+    "#ef2626",
+    "#1d7df5",
+    "#20bc8e",
+    "#f59c1a",
+    "#f25c8c",
+    "#4f6aee",
+    "#b85722",
+    "#2ea992",
+  ];
+  const index = match ? Number(match[1]) - 1 : 0;
+  return palette[index % palette.length];
+}
+
+function getTeamPages() {
+  const pages = [];
+
+  for (let index = 0; index < teams.length; index += TEAMS_PER_PAGE) {
+    pages.push(teams.slice(index, index + TEAMS_PER_PAGE));
+  }
+
+  return pages;
+}
+
 function getIconPath(fileName) {
   return `./Icons/${fileName}`;
 }
@@ -128,30 +165,67 @@ function renderNodes() {
 }
 
 function renderTeams() {
-  teamGrid.replaceChildren();
+  const teamPages = getTeamPages();
+  currentTeamPage = clamp(currentTeamPage, 0, Math.max(0, teamPages.length - 1));
+  teamGridTrack.replaceChildren();
+  teamPageDots.replaceChildren();
 
-  teams.forEach((team) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "team-card";
-    button.dataset.teamId = team.id;
+  teamPages.forEach((pageTeams, pageIndex) => {
+    const page = document.createElement("div");
+    page.className = "team-grid-page";
 
-    const graphic = document.createElement("span");
-    graphic.className = "team-card-graphic";
+    pageTeams.forEach((team) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "team-card";
+      button.dataset.teamId = team.id;
+      button.style.setProperty("--team-ring", getTeamRingColor(team.id));
 
-    const image = document.createElement("img");
-    image.src = team.image;
-    image.alt = "";
+      const shell = document.createElement("span");
+      shell.className = "team-card-shell";
 
-    const label = document.createElement("span");
-    label.className = "team-card-name";
-    label.textContent = team.name;
+      const graphic = document.createElement("span");
+      graphic.className = "team-card-graphic";
 
-    graphic.append(image);
-    button.append(graphic, label);
-    button.addEventListener("click", () => openTeamModal(team.id));
-    teamGrid.append(button);
+      const image = document.createElement("img");
+      image.src = team.image;
+      image.alt = "";
+
+      const label = document.createElement("span");
+      label.className = "team-card-name";
+      label.textContent = team.name;
+
+      graphic.append(image);
+      shell.append(graphic);
+      button.append(shell, label);
+      button.addEventListener("click", () => openTeamModal(team.id));
+      page.append(button);
+    });
+
+    teamGridTrack.append(page);
+
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.className = "team-page-dot";
+    dot.setAttribute("aria-label", `Go to team page ${pageIndex + 1}`);
+    dot.classList.toggle("is-active", pageIndex === currentTeamPage);
+    dot.addEventListener("click", () => setTeamPage(pageIndex));
+    teamPageDots.append(dot);
   });
+
+  updateTeamPagePosition();
+}
+
+function updateTeamPagePosition() {
+  teamGridTrack.style.transform = `translateX(-${currentTeamPage * 100}%)`;
+  teamPageDots.querySelectorAll(".team-page-dot").forEach((dot, index) => {
+    dot.classList.toggle("is-active", index === currentTeamPage);
+  });
+}
+
+function setTeamPage(pageIndex) {
+  currentTeamPage = clamp(pageIndex, 0, Math.max(0, getTeamPages().length - 1));
+  updateTeamPagePosition();
 }
 
 function openTeamModal(teamId) {
@@ -213,6 +287,11 @@ function closeModal() {
   document.body.style.overflow = "";
 }
 
+function stopDragPan() {
+  dragPanState = null;
+  viewport.classList.remove("is-dragging");
+}
+
 modal.addEventListener("click", (event) => {
   if (event.target instanceof HTMLElement && event.target.dataset.closeModal === "true") {
     closeModal();
@@ -228,6 +307,39 @@ teamModal.addEventListener("click", (event) => {
     closeTeamModal();
   }
 });
+
+teamGridViewport.addEventListener("touchstart", (event) => {
+  if (event.touches.length !== 1) {
+    return;
+  }
+
+  teamSwipeState = {
+    startX: event.touches[0].clientX,
+    startY: event.touches[0].clientY,
+  };
+}, { passive: true });
+
+teamGridViewport.addEventListener("touchend", (event) => {
+  if (!teamSwipeState || event.changedTouches.length !== 1) {
+    teamSwipeState = null;
+    return;
+  }
+
+  const deltaX = event.changedTouches[0].clientX - teamSwipeState.startX;
+  const deltaY = event.changedTouches[0].clientY - teamSwipeState.startY;
+  teamSwipeState = null;
+
+  if (Math.abs(deltaX) < 40 || Math.abs(deltaX) < Math.abs(deltaY)) {
+    return;
+  }
+
+  if (deltaX < 0) {
+    setTeamPage(currentTeamPage + 1);
+    return;
+  }
+
+  setTeamPage(currentTeamPage - 1);
+}, { passive: true });
 
 zoomInButton.addEventListener("click", () => {
   setScale(scale + ZOOM_STEP);
@@ -295,6 +407,66 @@ viewport.addEventListener("touchend", (event) => {
 
 viewport.addEventListener("touchcancel", () => {
   pinchState = null;
+});
+
+viewport.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "touch") {
+    return;
+  }
+
+  if (!(event.target instanceof HTMLElement)) {
+    return;
+  }
+
+  if (event.target.closest(".map-node, .zoom-button, .hint-card, .info-card, .team-modal-card")) {
+    return;
+  }
+
+  dragPanState = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    startScrollLeft: viewport.scrollLeft,
+    startScrollTop: viewport.scrollTop,
+  };
+
+  viewport.classList.add("is-dragging");
+});
+
+viewport.addEventListener("pointermove", (event) => {
+  if (!dragPanState || dragPanState.pointerId !== event.pointerId) {
+    return;
+  }
+
+  const deltaX = event.clientX - dragPanState.startX;
+  const deltaY = event.clientY - dragPanState.startY;
+
+  viewport.scrollLeft = dragPanState.startScrollLeft - deltaX;
+  viewport.scrollTop = dragPanState.startScrollTop - deltaY;
+});
+
+viewport.addEventListener("pointerup", (event) => {
+  if (!dragPanState || dragPanState.pointerId !== event.pointerId) {
+    return;
+  }
+
+  stopDragPan();
+});
+
+viewport.addEventListener("pointercancel", (event) => {
+  if (!dragPanState || dragPanState.pointerId !== event.pointerId) {
+    return;
+  }
+
+  stopDragPan();
+});
+
+viewport.addEventListener("pointerleave", () => {
+  if (!dragPanState) {
+    return;
+  }
+
+  stopDragPan();
 });
 
 window.addEventListener("load", () => {

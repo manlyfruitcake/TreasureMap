@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700&family=Poppins:wght@400;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
@@ -18,12 +18,21 @@
         <section class="landing-screen" id="landingScreen" aria-label="Team selection">
           <div class="landing-backdrop"></div>
           <div class="landing-content">
-            <p class="landing-kicker">Before You Sail</p>
-            <h1 class="landing-title">Choose Your Team</h1>
-            <p class="landing-copy">
-              Pick the team you belong to. You’ll see the roster before opening the map.
-            </p>
-            <div class="team-grid" id="teamGrid"></div>
+            <header class="landing-title-panel" aria-label="Pirate Crews title">
+              <h1 class="landing-title">Pirate Crews</h1>
+            </header>
+
+            <section class="team-carousel" aria-label="Pirate crews carousel">
+              <div class="team-grid-viewport" id="teamGridViewport">
+                <div class="team-grid-track" id="teamGridTrack"></div>
+              </div>
+              <div class="team-page-dots" id="teamPageDots" aria-label="Team pages"></div>
+            </section>
+
+            <section class="landing-instruction-panel" aria-label="Crew selection guidance">
+              <h2>Ay ay, Captain!</h2>
+              <p>Select your crew to see its roster and route</p>
+            </section>
           </div>
         </section>
 
