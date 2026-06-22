@@ -48,6 +48,7 @@ const BASE_WIDTH = 1215;
 const BASE_HEIGHT = 852;
 const MAX_SCALE = 2;
 const ZOOM_STEP = 0.1;
+const DEPLOY_DATA_FILE_NAME = "map-content.js";
 
 let nodes = loadNodes();
 let teams = loadTeams();
@@ -196,13 +197,75 @@ function markDirty() {
   updateExport();
 }
 
-function persistNodes(message = "Changes saved to main app") {
+function getDeployableContent() {
+  return {
+    icons: [...ICONS],
+    defaultLocationImage: DEFAULT_LOCATION_IMAGE,
+    nodes: nodes.map((node) => ({ ...node })),
+    teams: teams.map((team) => ({
+      ...team,
+      members: [...team.members],
+    })),
+  };
+}
+
+function createDeployableContentScript() {
+  return [
+    "(function attachTreasureMapContent(global) {",
+    `  global.TreasureMapContent = ${JSON.stringify(getDeployableContent(), null, 2)};`,
+    "})(window);",
+    "",
+  ].join("\n");
+}
+
+async function saveDeployableContentFile() {
+  const fileContents = createDeployableContentScript();
+
+  if (typeof window.showSaveFilePicker === "function") {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: DEPLOY_DATA_FILE_NAME,
+      types: [
+        {
+          description: "Treasure Map data",
+          accept: {
+            "text/javascript": [".js"],
+          },
+        },
+      ],
+    });
+    const writable = await handle.createWritable();
+    await writable.write(fileContents);
+    await writable.close();
+    return "file";
+  }
+
+  const blob = new Blob([fileContents], { type: "text/javascript" });
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = DEPLOY_DATA_FILE_NAME;
+  link.click();
+  URL.revokeObjectURL(downloadUrl);
+  return "download";
+}
+
+async function persistNodes(message = "Changes saved to main app") {
   try {
     nodes = saveNodes(nodes);
     teams = saveTeams(teams);
+    const exportMethod = await saveDeployableContentFile();
     updateExport();
-    setDirtyState(false, message);
+    const statusMessage =
+      exportMethod === "file"
+        ? "Saved locally and wrote deployable map-content.js"
+        : "Saved locally and downloaded deployable map-content.js";
+    setDirtyState(false, message === "Changes saved to main app" ? statusMessage : message);
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      setDirtyState(true, "Save cancelled before deployable data file was written.");
+      return;
+    }
+
     const failureMessage =
       error instanceof DOMException && error.name === "QuotaExceededError"
         ? "Save failed: image data is too large. Use smaller images."
@@ -487,8 +550,8 @@ function syncSelectedTeam(mutator) {
   updateExport();
 }
 
-saveNodesButton.addEventListener("click", () => {
-  persistNodes();
+saveNodesButton.addEventListener("click", async () => {
+  await persistNodes();
 });
 
 mapTabButton.addEventListener("click", () => {

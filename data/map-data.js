@@ -1,8 +1,7 @@
 (function attachTreasureMapData(global) {
   const NODES_STORAGE_KEY = "treasure-map:nodes";
   const TEAMS_STORAGE_KEY = "treasure-map:teams";
-
-  const ICONS = [
+  const BUILTIN_ICONS = [
     "Icon_Poolside.png",
     "Icon_Restaurant.png",
     "icon_Ballroom.png",
@@ -27,10 +26,16 @@
     "icon_Usopp.png",
     "icon_Zoro.png",
   ];
-
-  const DEFAULT_LOCATION_IMAGE = "placeholder.svg";
-
-  const DEFAULT_NODES = [
+  const contentOverride = global.TreasureMapContent ?? {};
+  const ICONS = Array.isArray(contentOverride.icons) && contentOverride.icons.length
+    ? contentOverride.icons.filter((icon) => typeof icon === "string" && icon.trim())
+    : BUILTIN_ICONS;
+  const BUILTIN_DEFAULT_LOCATION_IMAGE = "placeholder.svg";
+  const DEFAULT_LOCATION_IMAGE =
+    typeof contentOverride.defaultLocationImage === "string" && contentOverride.defaultLocationImage.trim()
+      ? contentOverride.defaultLocationImage
+      : BUILTIN_DEFAULT_LOCATION_IMAGE;
+  const BUILTIN_DEFAULT_NODES = [
     {
       id: "area-1",
       title: "Seventh Hell",
@@ -66,7 +71,7 @@
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
   }
 
-  const DEFAULT_TEAMS = Array.from({ length: 13 }, (_, index) => ({
+  const BUILTIN_DEFAULT_TEAMS = Array.from({ length: 13 }, (_, index) => ({
     id: `team-${index + 1}`,
     name: `Team ${index + 1}`,
     image: createPlaceholderImage(index),
@@ -83,6 +88,48 @@
       members: Array.isArray(team.members) ? [...team.members] : [],
     }));
   }
+
+  function normalizeDefaultNode(node, index) {
+    const fallbackIcon = ICONS[0];
+    const x = Number(node?.x);
+    const y = Number(node?.y);
+
+    return {
+      id: typeof node?.id === "string" && node.id.trim() ? node.id : `area-${index + 1}`,
+      title: typeof node?.title === "string" && node.title.trim() ? node.title : `Area ${index + 1}`,
+      description: typeof node?.description === "string" ? node.description : "",
+      icon: typeof node?.icon === "string" && ICONS.includes(node.icon) ? node.icon : fallbackIcon,
+      image: typeof node?.image === "string" && node.image.trim() ? node.image : DEFAULT_LOCATION_IMAGE,
+      x: Number.isFinite(x) ? x : 50,
+      y: Number.isFinite(y) ? y : 50,
+    };
+  }
+
+  function normalizeDefaultTeam(team, index) {
+    const fallbackTeam = BUILTIN_DEFAULT_TEAMS[index] ?? BUILTIN_DEFAULT_TEAMS[0];
+    const members = Array.isArray(team?.members)
+      ? team.members
+          .map((member) => (typeof member === "string" ? member.trim() : ""))
+          .filter(Boolean)
+      : fallbackTeam.members;
+
+    return {
+      id: typeof team?.id === "string" && team.id.trim() ? team.id : fallbackTeam.id,
+      name: typeof team?.name === "string" && team.name.trim() ? team.name : fallbackTeam.name,
+      image: typeof team?.image === "string" && team.image.trim() ? team.image : fallbackTeam.image,
+      members: members.length ? members : [...fallbackTeam.members],
+    };
+  }
+
+  const DEFAULT_NODES_SOURCE = Array.isArray(contentOverride.nodes) && contentOverride.nodes.length
+    ? contentOverride.nodes
+    : BUILTIN_DEFAULT_NODES;
+  const DEFAULT_NODES = DEFAULT_NODES_SOURCE.map(normalizeDefaultNode);
+
+  const DEFAULT_TEAMS_SOURCE = Array.isArray(contentOverride.teams) && contentOverride.teams.length
+    ? contentOverride.teams
+    : BUILTIN_DEFAULT_TEAMS;
+  const DEFAULT_TEAMS = DEFAULT_TEAMS_SOURCE.map(normalizeDefaultTeam);
 
   function normalizeNode(node, index) {
     const fallbackIcon = ICONS[0];
