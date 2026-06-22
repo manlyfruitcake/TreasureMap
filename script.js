@@ -6,11 +6,11 @@ const teamGridTrack = document.getElementById("teamGridTrack");
 const teamGridViewport = document.getElementById("teamGridViewport");
 const teamPageDots = document.getElementById("teamPageDots");
 const teamModal = document.getElementById("teamModal");
-const teamModalImage = document.getElementById("teamModalImage");
 const teamMemberList = document.getElementById("teamMemberList");
 const closeTeamModalButton = document.getElementById("closeTeamModalButton");
 const openMapButton = document.getElementById("openMapButton");
 const mapZoomControls = document.getElementById("mapZoomControls");
+const teamRosterButton = document.getElementById("teamRosterButton");
 const hintCard = document.getElementById("hintCard");
 const infoImage = document.getElementById("infoImage");
 const title = document.getElementById("infoTitle");
@@ -24,6 +24,9 @@ const BASE_HEIGHT = 852;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 2;
 const ZOOM_STEP = 0.1;
+const DEFAULT_MAP_SCALE = 1.5;
+const ZOOM_LERP_DURATION = 180;
+const POPUP_ANIMATION_DURATION = 180;
 const { loadNodes, loadTeams, NODES_STORAGE_KEY, TEAMS_STORAGE_KEY } = window.TreasureMapData;
 
 let scale = 1;
@@ -35,6 +38,7 @@ let mapUnlocked = false;
 let dragPanState = null;
 let currentTeamPage = 0;
 let teamSwipeState = null;
+let zoomAnimationFrame = 0;
 const TEAMS_PER_PAGE = 6;
 
 function clamp(value, min, max) {
@@ -75,6 +79,10 @@ function getMinScale() {
   return Math.max(MIN_SCALE, widthFitScale, heightFitScale);
 }
 
+function getDefaultScale() {
+  return Math.max(getMinScale(), DEFAULT_MAP_SCALE);
+}
+
 function setScale(nextScale, focalPoint = null) {
   const clampedScale = clamp(nextScale, getMinScale(), MAX_SCALE);
 
@@ -93,6 +101,74 @@ function setScale(nextScale, focalPoint = null) {
 
   viewport.scrollLeft = Math.max(0, contentX * scale - viewportX);
   viewport.scrollTop = Math.max(0, contentY * scale - viewportY);
+}
+
+function animateScaleTo(nextScale, focalPoint = null) {
+  const targetScale = clamp(nextScale, getMinScale(), MAX_SCALE);
+
+  if (Math.abs(targetScale - scale) < 0.001) {
+    setScale(targetScale, focalPoint);
+    return;
+  }
+
+  if (zoomAnimationFrame) {
+    cancelAnimationFrame(zoomAnimationFrame);
+  }
+
+  const startScale = scale;
+  const startTime = performance.now();
+
+  const step = (timestamp) => {
+    const progress = clamp((timestamp - startTime) / ZOOM_LERP_DURATION, 0, 1);
+    const easedProgress = 1 - ((1 - progress) ** 3);
+    const interpolatedScale = startScale + ((targetScale - startScale) * easedProgress);
+
+    setScale(interpolatedScale, focalPoint);
+
+    if (progress < 1) {
+      zoomAnimationFrame = requestAnimationFrame(step);
+      return;
+    }
+
+    zoomAnimationFrame = 0;
+    setScale(targetScale, focalPoint);
+  };
+
+  zoomAnimationFrame = requestAnimationFrame(step);
+}
+
+function showAnimatedOverlay(container, card) {
+  if (container.hideTimerId) {
+    window.clearTimeout(container.hideTimerId);
+    container.hideTimerId = 0;
+  }
+
+  container.classList.remove("hidden");
+  container.dataset.state = "open";
+  card.dataset.state = "open";
+}
+
+function hideAnimatedOverlay(container, card, onComplete = null) {
+  if (container.classList.contains("hidden")) {
+    if (onComplete) {
+      onComplete();
+    }
+    return;
+  }
+
+  container.dataset.state = "closing";
+  card.dataset.state = "closing";
+
+  container.hideTimerId = window.setTimeout(() => {
+    container.classList.add("hidden");
+    container.dataset.state = "closed";
+    card.dataset.state = "closed";
+    container.hideTimerId = 0;
+
+    if (onComplete) {
+      onComplete();
+    }
+  }, POPUP_ANIMATION_DURATION);
 }
 
 function getNodeById(nodeId) {
@@ -142,6 +218,19 @@ function getLocationImagePath(fileName) {
   return fileName.startsWith("data:") ? fileName : `./images/Location/${fileName}`;
 }
 
+function refreshStoredData({ rerenderNodes = false, rerenderTeams = false } = {}) {
+  nodes = loadNodes();
+  teams = loadTeams();
+
+  if (rerenderNodes) {
+    renderNodes();
+  }
+
+  if (rerenderTeams) {
+    renderTeams();
+  }
+}
+
 function renderNodes() {
   mapCanvas.querySelectorAll(".map-node").forEach((nodeElement) => nodeElement.remove());
 
@@ -173,6 +262,10 @@ function renderTeams() {
   teamPages.forEach((pageTeams, pageIndex) => {
     const page = document.createElement("div");
     page.className = "team-grid-page";
+
+    if (pageTeams.length === 1) {
+      page.classList.add("is-single-team");
+    }
 
     pageTeams.forEach((team) => {
       const button = document.createElement("button");
@@ -229,6 +322,7 @@ function setTeamPage(pageIndex) {
 }
 
 function openTeamModal(teamId) {
+  refreshStoredData({ rerenderTeams: true });
   const team = getTeamById(teamId);
 
   if (!team) {
@@ -236,8 +330,6 @@ function openTeamModal(teamId) {
   }
 
   selectedTeamId = team.id;
-  teamModalImage.src = team.image;
-  teamModalImage.alt = `${team.name} graphic`;
   document.getElementById("teamModalTitle").textContent = team.name;
   teamMemberList.replaceChildren();
 
@@ -247,25 +339,28 @@ function openTeamModal(teamId) {
     teamMemberList.append(item);
   });
 
-  teamModal.classList.remove("hidden");
+  showAnimatedOverlay(teamModal, teamModal.querySelector(".team-modal-card"));
   teamModal.setAttribute("aria-hidden", "false");
 }
 
 function closeTeamModal() {
-  teamModal.classList.add("hidden");
+  hideAnimatedOverlay(teamModal, teamModal.querySelector(".team-modal-card"));
   teamModal.setAttribute("aria-hidden", "true");
 }
 
 function unlockMap() {
+  refreshStoredData({ rerenderNodes: true, rerenderTeams: true });
   mapUnlocked = true;
   landingScreen.classList.add("hidden");
   closeTeamModal();
   viewport.classList.remove("is-blurred");
   mapZoomControls.classList.remove("hidden");
   hintCard.classList.remove("hidden");
+  animateScaleTo(getDefaultScale());
 }
 
 function openModal(nodeId) {
+  refreshStoredData({ rerenderNodes: true });
   const node = getNodeById(nodeId);
 
   if (!node) {
@@ -276,13 +371,13 @@ function openModal(nodeId) {
   description.textContent = node.description;
   infoImage.src = getLocationImagePath(node.image);
   infoImage.alt = `${node.title} preview`;
-  modal.classList.remove("hidden");
+  showAnimatedOverlay(modal, modal.querySelector(".info-card"));
   modal.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
 }
 
 function closeModal() {
-  modal.classList.add("hidden");
+  hideAnimatedOverlay(modal, modal.querySelector(".info-card"));
   modal.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
 }
@@ -301,6 +396,13 @@ modal.addEventListener("click", (event) => {
 closeModalButton.addEventListener("click", closeModal);
 closeTeamModalButton.addEventListener("click", closeTeamModal);
 openMapButton.addEventListener("click", unlockMap);
+teamRosterButton.addEventListener("click", () => {
+  if (!selectedTeamId) {
+    return;
+  }
+
+  openTeamModal(selectedTeamId);
+});
 
 teamModal.addEventListener("click", (event) => {
   if (event.target instanceof HTMLElement && event.target.dataset.closeTeamModal === "true") {
@@ -342,11 +444,11 @@ teamGridViewport.addEventListener("touchend", (event) => {
 }, { passive: true });
 
 zoomInButton.addEventListener("click", () => {
-  setScale(scale + ZOOM_STEP);
+  animateScaleTo(scale + ZOOM_STEP);
 });
 
 zoomOutButton.addEventListener("click", () => {
-  setScale(scale - ZOOM_STEP);
+  animateScaleTo(scale - ZOOM_STEP);
 });
 
 document.addEventListener("keydown", (event) => {
@@ -470,17 +572,27 @@ viewport.addEventListener("pointerleave", () => {
 });
 
 window.addEventListener("load", () => {
-  nodes = loadNodes();
-  teams = loadTeams();
-  renderNodes();
-  renderTeams();
-  scale = getMinScale();
+  refreshStoredData({ rerenderNodes: true, rerenderTeams: true });
+  scale = getDefaultScale();
   resizeCanvas(scale);
   centerViewportOn(BASE_WIDTH / 2, BASE_HEIGHT / 2);
+  landingScreen.classList.add("is-ready");
 });
 
 window.addEventListener("resize", () => {
   setScale(scale);
+});
+
+window.addEventListener("focus", () => {
+  refreshStoredData({ rerenderNodes: true, rerenderTeams: true });
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") {
+    return;
+  }
+
+  refreshStoredData({ rerenderNodes: true, rerenderTeams: true });
 });
 
 window.addEventListener("storage", (event) => {

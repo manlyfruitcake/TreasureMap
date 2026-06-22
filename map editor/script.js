@@ -197,10 +197,64 @@ function markDirty() {
 }
 
 function persistNodes(message = "Changes saved to main app") {
-  nodes = saveNodes(nodes);
-  teams = saveTeams(teams);
-  updateExport();
-  setDirtyState(false, message);
+  try {
+    nodes = saveNodes(nodes);
+    teams = saveTeams(teams);
+    updateExport();
+    setDirtyState(false, message);
+  } catch (error) {
+    const failureMessage =
+      error instanceof DOMException && error.name === "QuotaExceededError"
+        ? "Save failed: image data is too large. Use smaller images."
+        : "Save failed. Please try again.";
+
+    setDirtyState(true, failureMessage);
+  }
+}
+
+function optimizeImageFile(file, { maxWidth, maxHeight, mimeType = "image/webp", quality = 0.82 }) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onload = () => {
+        const scale = Math.min(1, maxWidth / image.width, maxHeight / image.height);
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+          reject(new Error("Canvas context is unavailable"));
+          return;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL(mimeType, quality));
+      };
+
+      image.onerror = () => {
+        reject(new Error("Selected image could not be loaded"));
+      };
+
+      if (typeof reader.result !== "string") {
+        reject(new Error("Selected image could not be read"));
+        return;
+      }
+
+      image.src = reader.result;
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Selected image could not be read"));
+    };
+
+    reader.readAsDataURL(file);
+  });
 }
 
 function updateForm() {
@@ -507,20 +561,19 @@ nodeImageFileInput.addEventListener("change", async () => {
     return;
   }
 
-  const dataUrl = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
+  try {
+    const dataUrl = await optimizeImageFile(file, {
+      maxWidth: 960,
+      maxHeight: 640,
+      quality: 0.8,
+    });
 
-  if (typeof dataUrl !== "string") {
-    return;
+    syncSelectedNode((node) => {
+      node.image = dataUrl;
+    });
+  } catch {
+    setDirtyState(true, "Image update failed. Please try another file.");
   }
-
-  syncSelectedNode((node) => {
-    node.image = dataUrl;
-  });
 
   nodeImageFileInput.value = "";
 });
@@ -565,20 +618,19 @@ teamImageFileInput.addEventListener("change", async () => {
     return;
   }
 
-  const dataUrl = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
+  try {
+    const dataUrl = await optimizeImageFile(file, {
+      maxWidth: 320,
+      maxHeight: 320,
+      quality: 0.82,
+    });
 
-  if (typeof dataUrl !== "string") {
-    return;
+    syncSelectedTeam((team) => {
+      team.image = dataUrl;
+    });
+  } catch {
+    setDirtyState(true, "Image update failed. Please try another file.");
   }
-
-  syncSelectedTeam((team) => {
-    team.image = dataUrl;
-  });
 
   teamImageFileInput.value = "";
 });

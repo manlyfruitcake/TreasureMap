@@ -51,20 +51,22 @@ button {
 
 .map-title {
   position: absolute;
-  top: 70px;
+  top: 18px;
   left: 50%;
   z-index: 3;
   transform: translateX(-50%);
-  min-width: 225px;
-  max-width: calc(100% - 48px);
-  padding: 12px 24px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 24px rgba(48, 32, 22, 0.15);
-  font-family: "Baloo 2", sans-serif;
-  font-size: 1.85rem;
-  font-weight: 800;
-  line-height: 0.9;
+  width: calc(100% - 24px);
+  max-width: 360px;
+  min-height: 106px;
+  padding: 20px 44px 18px;
+  display: grid;
+  place-items: center;
+  background: center / 100% 100% no-repeat url("./images/container_mapTitle.png");
+  color: #23160f;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
   text-align: center;
 }
 
@@ -73,6 +75,10 @@ button {
   position: absolute;
   inset: 0;
   z-index: 8;
+}
+
+.landing-screen {
+  --panel-slide-distance: 34px;
 }
 
 .landing-backdrop,
@@ -90,7 +96,7 @@ button {
   padding: 26px 20px 18px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
 .landing-title-panel {
@@ -99,13 +105,15 @@ button {
   place-items: center;
   padding: 20px 44px 18px;
   background: center / 100% 100% no-repeat url("./images/container_mapTitle.png");
+  opacity: 0;
+  transform: translateY(calc(var(--panel-slide-distance) * -1));
 }
 
 .landing-title {
   margin: 0;
   color: #23160f;
   font-family: "Poppins", sans-serif;
-  font-size: 2rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
   text-align: center;
@@ -116,17 +124,21 @@ button {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 14px;
+  gap: 8px;
+  overflow: hidden;
 }
 
 .team-grid-viewport {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
   overflow: hidden;
 }
 
 .team-grid-track {
   display: flex;
-  transition: transform 220ms ease;
+  transition: transform 360ms cubic-bezier(0.22, 1.2, 0.32, 1);
   will-change: transform;
 }
 
@@ -135,8 +147,20 @@ button {
   flex: 0 0 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 14px;
+  gap: clamp(4px, 1.1vh, 12px) clamp(10px, 3vw, 14px);
+  align-content: space-evenly;
+  justify-items: center;
+  min-height: 100%;
+}
+
+.team-grid-page.is-single-team {
   align-content: start;
+  justify-items: start;
+  padding-top: clamp(4px, 1.1vh, 12px);
+}
+
+.team-grid-page.is-single-team .team-card {
+  justify-self: start;
 }
 
 .team-card {
@@ -145,32 +169,26 @@ button {
   background: transparent;
   color: inherit;
   text-align: center;
+  opacity: 0;
+  transform: translateY(12px);
 }
 
 .team-card-shell {
-  display: inline-grid;
-  place-items: center;
-  width: 122px;
-  height: 122px;
+  display: inline-block;
+  width: min(100%, clamp(98px, 14.25vh, 140px));
+  aspect-ratio: 1;
   margin: 0 auto;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.16),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.55);
 }
 
 .team-card-graphic {
-  width: 110px;
-  height: 110px;
+  width: 100%;
+  aspect-ratio: 1;
   overflow: hidden;
   border-radius: 50%;
-  border: 4px solid var(--team-ring, rgba(255, 255, 255, 0.7));
-  background: #fff;
+  background: transparent;
 }
 
-.team-card-graphic img,
-.team-modal-image {
+.team-card-graphic img {
   display: block;
   width: 100%;
   height: 100%;
@@ -179,10 +197,10 @@ button {
 
 .team-card-name {
   display: block;
-  margin-top: 10px;
+  margin-top: 6px;
   color: #fffef8;
   font-family: "Poppins", sans-serif;
-  font-size: 0.9rem;
+  font-size: clamp(0.7rem, 1.65vh, 0.86rem);
   font-weight: 700;
   line-height: 1.15;
   text-align: center;
@@ -214,17 +232,19 @@ button {
 }
 
 .landing-instruction-panel {
-  min-height: 116px;
-  padding: 24px 30px 16px;
+  min-height: 104px;
+  padding: 20px 28px 14px;
   background: center / 100% 100% no-repeat url("./images/container_instruction.png");
   text-align: center;
+  opacity: 0;
+  transform: translateY(var(--panel-slide-distance));
 }
 
 .landing-instruction-panel h2 {
   margin: 0 0 6px;
   color: #13100b;
   font-family: "Poppins", sans-serif;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -232,9 +252,43 @@ button {
   margin: 0;
   color: #13100b;
   font-family: "Poppins", sans-serif;
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   font-weight: 400;
   line-height: 1.45;
+}
+
+@media (max-height: 760px) {
+  .landing-content {
+    padding-top: 18px;
+    padding-bottom: 12px;
+    gap: 8px;
+  }
+
+  .landing-title-panel {
+    min-height: 92px;
+    padding: 16px 34px 14px;
+  }
+
+  .team-card-shell {
+    width: min(100%, clamp(88px, 12.5vh, 123px));
+  }
+
+  .team-card-name {
+    font-size: clamp(0.64rem, 1.45vh, 0.8rem);
+  }
+
+  .landing-instruction-panel {
+    min-height: 92px;
+    padding: 16px 24px 12px;
+  }
+
+  .landing-instruction-panel h2 {
+    margin-bottom: 4px;
+  }
+
+  .landing-instruction-panel p {
+    font-size: 0.82rem;
+  }
 }
 
 .map-viewport.is-blurred .map-canvas {
@@ -243,45 +297,57 @@ button {
   transform-origin: center;
 }
 
-.team-modal-card {
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  top: 50%;
-  z-index: 1;
-  transform: translateY(-50%);
-  padding: 24px 22px 26px;
-  border-radius: 32px;
-  background: rgba(255, 248, 234, 0.94);
-  box-shadow: 0 18px 45px var(--shadow);
-  text-align: center;
+.map-canvas {
+  transition:
+    filter 520ms ease,
+    transform 520ms ease;
 }
 
-.team-modal-image {
-  height: 150px;
-  border-radius: 22px;
-  margin-bottom: 18px;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+.team-modal-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  width: min(calc(100% - 24px), 676px);
+  height: 668px;
+  transform: translate(-50%, -50%);
+  padding: 54px 44px 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: center / contain no-repeat url("./images/panel_popup.png");
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+.team-modal-card > * {
+  width: 100%;
+  max-width: 340px;
 }
 
 .team-member-list {
-  margin: 18px 0 24px;
+  flex: 1;
+  margin: 20px 0 22px;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 10px;
+  scrollbar-width: thin;
 }
 
 .team-member-list li {
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: rgba(59, 40, 23, 0.08);
+  padding: 0;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .open-map-button {
   min-height: 52px;
-  width: 100%;
   border: 0;
   border-radius: 999px;
   background: #2f6c77;
@@ -354,19 +420,23 @@ button {
 }
 
 .zoom-button {
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border: 3px solid var(--outline);
+  border: 2px solid var(--outline);
   border-radius: 50%;
   background: rgba(46, 44, 36, 0.74);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
   color: #fff;
-  font-size: 2rem;
+  font-size: 1.55rem;
   font-weight: 700;
   line-height: 1;
   backdrop-filter: blur(3px);
+}
+
+.roster-button {
+  font-size: 1.15rem;
 }
 
 .zoom-button:active {
@@ -375,32 +445,31 @@ button {
 
 .hint-card {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 0;
+  left: 6px;
+  right: 6px;
+  bottom: 8px;
   z-index: 3;
-  padding: 16px 20px 24px;
-  border-radius: 28px 28px 0 0;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
+  min-height: 116px;
+  padding: 24px 30px 16px;
+  background: center / 100% 100% no-repeat url("./images/container_instruction.png");
   text-align: center;
 }
 
 .hint-card h2,
 .info-card h2 {
   margin: 0 0 4px;
-  font-family: "Baloo 2", sans-serif;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 0.95;
+  font-family: "Poppins", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 .hint-card p,
 .info-card p {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.35;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.96rem;
+  line-height: 1.45;
 }
 
 .info-modal {
@@ -422,20 +491,35 @@ button {
 
 .info-card {
   position: absolute;
-  top: 118px;
-  left: 18px;
-  right: 18px;
-  padding: 28px 28px 34px;
-  border-radius: 34px;
-  background: var(--card);
-  box-shadow: 0 18px 45px var(--shadow);
+  left: 50%;
+  top: 50%;
+  width: min(calc(100% - 24px), 356px);
+  height: min(calc(100% - 28px), 620px);
+  transform: translate(-50%, -50%);
+  padding: 42px 28px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: center / contain no-repeat url("./images/panel_popup.png");
   text-align: center;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+.info-card > * {
+  width: 100%;
+  max-width: 290px;
+}
+
+.info-card .close-button {
+  top: 28px;
+  right: 24px;
 }
 
 .close-button {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 46px;
+  right: 44px;
   width: 36px;
   height: 36px;
   border: 0;
@@ -451,8 +535,8 @@ button {
   height: 142px;
   margin: 18px 0 24px;
   overflow: hidden;
-  border-radius: 14px;
-  background: rgba(214, 214, 214, 0.9);
+  border-radius: 18px;
+  background: rgba(255, 248, 234, 0.76);
 }
 
 .image-placeholder img {
@@ -460,6 +544,148 @@ button {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+#infoDescription {
+  flex: 1;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.landing-screen.is-ready .landing-title-panel {
+  animation: landing-panel-in-top 420ms cubic-bezier(0.2, 0.85, 0.2, 1) forwards;
+}
+
+.landing-screen.is-ready .landing-instruction-panel {
+  animation: landing-panel-in-bottom 420ms cubic-bezier(0.2, 0.85, 0.2, 1) 80ms forwards;
+}
+
+.landing-screen.is-ready .team-card {
+  animation: landing-team-fade 320ms ease forwards;
+}
+
+.landing-screen.is-ready .team-grid-page .team-card:nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.landing-screen.is-ready .team-grid-page .team-card:nth-child(2) {
+  animation-delay: 170ms;
+}
+
+.landing-screen.is-ready .team-grid-page .team-card:nth-child(3) {
+  animation-delay: 220ms;
+}
+
+.landing-screen.is-ready .team-grid-page .team-card:nth-child(4) {
+  animation-delay: 270ms;
+}
+
+.landing-screen.is-ready .team-grid-page .team-card:nth-child(5) {
+  animation-delay: 320ms;
+}
+
+.landing-screen.is-ready .team-grid-page .team-card:nth-child(6) {
+  animation-delay: 370ms;
+}
+
+.team-modal[data-state="open"] .team-modal-backdrop,
+.info-modal[data-state="open"] .info-backdrop {
+  animation: modal-backdrop-in 180ms ease forwards;
+}
+
+.team-modal[data-state="closing"] .team-modal-backdrop,
+.info-modal[data-state="closing"] .info-backdrop {
+  animation: modal-backdrop-out 180ms ease forwards;
+}
+
+.team-modal-card[data-state="open"],
+.info-card[data-state="open"] {
+  animation: popup-in 180ms cubic-bezier(0.2, 0.85, 0.2, 1) forwards;
+}
+
+.team-modal-card[data-state="closing"],
+.info-card[data-state="closing"] {
+  animation: popup-out 180ms ease forwards;
+}
+
+@keyframes landing-panel-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--panel-slide-distance) * -1));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-panel-in-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(var(--panel-slide-distance));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-team-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popup-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes popup-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+}
+
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-backdrop-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 @media (max-width: 420px) {
@@ -471,6 +697,21 @@ button {
     width: 100vw;
     height: 100svh;
     border-radius: 0;
+  }
+
+  .map-title {
+    width: calc(100% - 12px);
+    min-height: 94px;
+    padding-inline: 36px;
+    font-size: 1.72rem;
+  }
+
+  .hint-card {
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    min-height: 110px;
+    padding-inline: 26px;
   }
 
   .landing-content {
@@ -490,19 +731,42 @@ button {
     gap: 14px 10px;
   }
 
-  .team-card-shell {
-    width: 108px;
-    height: 108px;
-  }
-
-  .team-card-graphic {
-    width: 98px;
-    height: 98px;
-  }
-
   .landing-instruction-panel {
     min-height: 110px;
     padding-inline: 26px;
+  }
+
+  .team-modal-card,
+  .info-card {
+    width: min(calc(100% - 12px), 676px);
+  }
+
+  .info-card {
+    width: min(calc(100% - 12px), 356px);
+    height: min(calc(100% - 16px), 620px);
+    padding: 40px 24px 26px;
+  }
+
+  .info-card > * {
+    max-width: 282px;
+  }
+
+  .info-card .close-button {
+    top: 24px;
+    right: 18px;
+  }
+
+  .team-modal-card {
+    padding: 52px 34px 38px;
+  }
+
+  .team-modal-card > * {
+    max-width: 304px;
+  }
+
+  .close-button {
+    top: 42px;
+    right: 34px;
   }
 }
 
