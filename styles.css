@@ -58,7 +58,7 @@ button {
   width: calc(100% - 24px);
   max-width: 360px;
   min-height: 106px;
-  padding: 20px 44px 18px;
+  padding: 15px 44px 18px;
   display: grid;
   place-items: center;
   background: center / 100% 100% no-repeat url("./images/container_mapTitle.png");
@@ -460,9 +460,9 @@ button {
 
 .hint-card h2,
 .info-card h2 {
-  margin: 0 0 4px;
+  margin: 1 0 0px;
   font-family: "Poppins", sans-serif;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1.1;
 }
@@ -471,7 +471,7 @@ button {
 .info-card p {
   margin: 0;
   font-family: "Poppins", sans-serif;
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   line-height: 1.45;
 }
 
