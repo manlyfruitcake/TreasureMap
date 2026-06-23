@@ -122,7 +122,9 @@
 
           <label class="field">
             <span>Location image</span>
-            <input id="nodeImageFile" type="file" accept="image/*" disabled />
+            <button class="secondary-button asset-picker-button" type="button" id="openLocationPickerButton" disabled>
+              Choose from Location folder
+            </button>
           </label>
 
           <button class="secondary-button" type="button" id="resetNodeImageButton" disabled>
@@ -180,6 +182,22 @@
           </label>
         </form>
       </aside>
+
+      <section class="asset-modal hidden" id="locationPickerModal" aria-hidden="true">
+        <div class="asset-modal-backdrop" data-close-location-picker="true"></div>
+        <article class="asset-modal-card" role="dialog" aria-modal="true" aria-labelledby="locationPickerTitle">
+          <div class="asset-modal-header">
+            <div>
+              <p class="eyebrow">Location Assets</p>
+              <h2 id="locationPickerTitle">Choose Image</h2>
+            </div>
+            <button class="secondary-button asset-modal-close" type="button" id="closeLocationPickerButton" aria-label="Close image picker">
+              Close
+            </button>
+          </div>
+          <div class="location-image-grid" id="locationImageGrid"></div>
+        </article>
+      </section>
     </main>
 
     <script src="../data/map-content.js"></script>

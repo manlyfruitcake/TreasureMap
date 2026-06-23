@@ -396,6 +396,91 @@ h2 {
   object-fit: cover;
 }
 
+.asset-picker-button {
+  width: 100%;
+}
+
+.asset-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.asset-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(25, 15, 10, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.asset-modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(960px, calc(100vw - 40px));
+  max-height: min(80svh, 860px);
+  padding: 24px;
+  border-radius: 28px;
+  background: var(--card-strong);
+  box-shadow: 0 22px 50px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.asset-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.asset-modal-close {
+  min-width: 88px;
+}
+
+.location-image-grid {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  padding-right: 4px;
+}
+
+.location-image-choice {
+  padding: 10px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: rgba(43, 26, 15, 0.06);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.location-image-choice img {
+  width: 100%;
+  aspect-ratio: 1.35;
+  border-radius: 14px;
+  object-fit: cover;
+  display: block;
+}
+
+.location-image-choice-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.location-image-choice.is-selected {
+  border-color: var(--sea);
+  background: rgba(47, 108, 119, 0.1);
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -507,6 +592,25 @@ code {
 
   .icon-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .asset-modal {
+    padding: 12px;
+  }
+
+  .asset-modal-card {
+    width: calc(100vw - 24px);
+    max-height: calc(100svh - 24px);
+    padding: 18px;
+  }
+
+  .asset-modal-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .location-image-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
 }

@@ -23,9 +23,12 @@ const titleInput = document.getElementById("nodeTitle");
 const descriptionInput = document.getElementById("nodeDescription");
 const xInput = document.getElementById("nodeX");
 const yInput = document.getElementById("nodeY");
-const nodeImageFileInput = document.getElementById("nodeImageFile");
+const openLocationPickerButton = document.getElementById("openLocationPickerButton");
 const nodeImagePreview = document.getElementById("nodeImagePreview");
 const resetNodeImageButton = document.getElementById("resetNodeImageButton");
+const locationPickerModal = document.getElementById("locationPickerModal");
+const locationImageGrid = document.getElementById("locationImageGrid");
+const closeLocationPickerButton = document.getElementById("closeLocationPickerButton");
 const teamNameInput = document.getElementById("teamName");
 const teamImageFileInput = document.getElementById("teamImageFile");
 const teamImagePreview = document.getElementById("teamImagePreview");
@@ -34,6 +37,7 @@ const teamMembersInput = document.getElementById("teamMembers");
 const exportOutput = document.getElementById("exportOutput");
 const {
   ICONS,
+  LOCATION_IMAGES,
   DEFAULT_LOCATION_IMAGE,
   DEFAULT_NODES,
   DEFAULT_TEAMS,
@@ -58,6 +62,7 @@ let dragState = null;
 let isDirty = false;
 let scale = 1;
 let activeTab = "map";
+let exportUpdateTimer = 0;
 
 function cloneNodes(nodeList) {
   return nodeList.map((node) => ({ ...node }));
@@ -92,6 +97,10 @@ function getIconPath(fileName) {
 
 function getLocationImagePath(fileName) {
   return fileName.startsWith("data:") ? fileName : `../images/Location/${fileName}`;
+}
+
+function getLocationImageLabel(fileName) {
+  return fileName.replace(/\.[^.]+$/, "");
 }
 
 function clamp(value, min, max) {
@@ -162,6 +171,36 @@ function populateIconPicker() {
   });
 }
 
+function populateLocationImagePicker() {
+  locationImageGrid.replaceChildren();
+
+  LOCATION_IMAGES.forEach((imageName) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "location-image-choice";
+    button.dataset.imageName = imageName;
+    button.setAttribute("aria-label", getLocationImageLabel(imageName));
+
+    const preview = document.createElement("img");
+    preview.src = getLocationImagePath(imageName);
+    preview.alt = "";
+
+    const label = document.createElement("span");
+    label.className = "location-image-choice-name";
+    label.textContent = getLocationImageLabel(imageName);
+
+    button.append(preview, label);
+    button.addEventListener("click", () => {
+      syncSelectedNode((node) => {
+        node.image = imageName;
+      });
+      closeLocationPicker();
+    });
+
+    locationImageGrid.append(button);
+  });
+}
+
 function getSelectedNode() {
   return nodes.find((node) => node.id === selectedNodeId) ?? null;
 }
@@ -171,9 +210,10 @@ function getSelectedTeam() {
 }
 
 function setFormDisabled(isDisabled) {
-  [titleInput, descriptionInput, xInput, yInput, nodeImageFileInput].forEach((field) => {
+  [titleInput, descriptionInput, xInput, yInput].forEach((field) => {
     field.disabled = isDisabled;
   });
+  openLocationPickerButton.disabled = isDisabled;
   deleteNodeButton.disabled = isDisabled;
   resetNodeImageButton.disabled = isDisabled;
   iconGrid.querySelectorAll(".icon-choice").forEach((button) => {
@@ -185,6 +225,17 @@ function updateExport() {
   exportOutput.value = JSON.stringify({ nodes, teams }, null, 2);
 }
 
+function scheduleExportUpdate() {
+  if (exportUpdateTimer) {
+    window.clearTimeout(exportUpdateTimer);
+  }
+
+  exportUpdateTimer = window.setTimeout(() => {
+    exportUpdateTimer = 0;
+    updateExport();
+  }, 120);
+}
+
 function setDirtyState(nextDirty, message = nextDirty ? "Unsaved changes" : "All changes saved") {
   isDirty = nextDirty;
   saveNodesButton.disabled = !nextDirty;
@@ -194,12 +245,13 @@ function setDirtyState(nextDirty, message = nextDirty ? "Unsaved changes" : "All
 
 function markDirty() {
   setDirtyState(true);
-  updateExport();
+  scheduleExportUpdate();
 }
 
 function getDeployableContent() {
   return {
     icons: [...ICONS],
+    locationImages: [...LOCATION_IMAGES],
     defaultLocationImage: DEFAULT_LOCATION_IMAGE,
     nodes: nodes.map((node) => ({ ...node })),
     teams: teams.map((team) => ({
@@ -379,10 +431,56 @@ function updateIconPicker() {
   });
 }
 
+function updateLocationImagePicker() {
+  const selectedNode = getSelectedNode();
+
+  locationImageGrid.querySelectorAll(".location-image-choice").forEach((button) => {
+    const isSelected = selectedNode?.image === button.dataset.imageName;
+    button.classList.toggle("is-selected", isSelected);
+  });
+}
+
+function openLocationPicker() {
+  if (!getSelectedNode()) {
+    return;
+  }
+
+  updateLocationImagePicker();
+  locationPickerModal.classList.remove("hidden");
+  locationPickerModal.setAttribute("aria-hidden", "false");
+}
+
+function closeLocationPicker() {
+  locationPickerModal.classList.add("hidden");
+  locationPickerModal.setAttribute("aria-hidden", "true");
+}
+
 function updateSelectedNodeStyles() {
   mapCanvas.querySelectorAll(".map-node").forEach((nodeElement) => {
     nodeElement.classList.toggle("is-selected", nodeElement.dataset.nodeId === selectedNodeId);
   });
+}
+
+function getNodeElementById(nodeId) {
+  return mapCanvas.querySelector(`.map-node[data-node-id="${nodeId}"]`);
+}
+
+function updateNodeElement(node) {
+  const nodeElement = getNodeElementById(node.id);
+
+  if (!nodeElement) {
+    return;
+  }
+
+  nodeElement.style.left = `${node.x}%`;
+  nodeElement.style.top = `${node.y}%`;
+  nodeElement.setAttribute("aria-label", `Edit ${node.title}`);
+
+  const image = nodeElement.querySelector("img");
+
+  if (image) {
+    image.src = getIconPath(node.icon);
+  }
 }
 
 function populateTeamPicker() {
@@ -414,6 +512,31 @@ function renderTeamPicker() {
   teamPickerGrid.replaceChildren();
   populateTeamPicker();
   updateTeamForm();
+}
+
+function updateSelectedTeamChoice() {
+  const team = getSelectedTeam();
+
+  if (!team) {
+    return;
+  }
+
+  const teamButton = teamPickerGrid.querySelector(`.team-choice[data-team-id="${team.id}"]`);
+
+  if (!teamButton) {
+    return;
+  }
+
+  const image = teamButton.querySelector("img");
+  const label = teamButton.querySelector(".team-choice-name");
+
+  if (image) {
+    image.src = team.image;
+  }
+
+  if (label) {
+    label.textContent = team.name;
+  }
 }
 
 function setActiveTab(nextTab) {
@@ -488,7 +611,7 @@ function createNodeElement(node) {
   return button;
 }
 
-function render() {
+function renderNodes() {
   mapCanvas.querySelectorAll(".map-node").forEach((nodeElement) => nodeElement.remove());
 
   nodes.forEach((node) => {
@@ -505,8 +628,13 @@ function render() {
   });
 
   updateForm();
+}
+
+function render() {
+  renderNodes();
   renderTeamPicker();
   updateExport();
+  updateLocationImagePicker();
 }
 
 function addNodeAt(x, y) {
@@ -525,29 +653,58 @@ function getCanvasCoordinatesFromViewport(clientX, clientY) {
   };
 }
 
-function syncSelectedNode(mutator) {
+function syncSelectedNode(mutator, options = {}) {
   const node = getSelectedNode();
 
   if (!node) {
     return;
   }
 
+  const {
+    rerenderMap = false,
+    refreshForm = true,
+  } = options;
+
   mutator(node);
   markDirty();
-  render();
+
+  if (rerenderMap) {
+    renderNodes();
+    return;
+  }
+
+  updateNodeElement(node);
+
+  if (refreshForm) {
+    updateForm();
+  }
 }
 
-function syncSelectedTeam(mutator) {
+function syncSelectedTeam(mutator, options = {}) {
   const team = getSelectedTeam();
 
   if (!team) {
     return;
   }
 
+  const {
+    rerenderTeamPicker = false,
+    refreshForm = true,
+  } = options;
+
   mutator(team);
   markDirty();
-  renderTeamPicker();
-  updateExport();
+
+  if (rerenderTeamPicker) {
+    renderTeamPicker();
+    return;
+  }
+
+  updateSelectedTeamChoice();
+
+  if (refreshForm) {
+    updateTeamForm();
+  }
 }
 
 saveNodesButton.addEventListener("click", async () => {
@@ -617,28 +774,13 @@ descriptionInput.addEventListener("input", () => {
   });
 });
 
-nodeImageFileInput.addEventListener("change", async () => {
-  const file = nodeImageFileInput.files?.[0];
+openLocationPickerButton.addEventListener("click", openLocationPicker);
+closeLocationPickerButton.addEventListener("click", closeLocationPicker);
 
-  if (!file) {
-    return;
+locationPickerModal.addEventListener("click", (event) => {
+  if (event.target instanceof HTMLElement && event.target.dataset.closeLocationPicker === "true") {
+    closeLocationPicker();
   }
-
-  try {
-    const dataUrl = await optimizeImageFile(file, {
-      maxWidth: 960,
-      maxHeight: 640,
-      quality: 0.8,
-    });
-
-    syncSelectedNode((node) => {
-      node.image = dataUrl;
-    });
-  } catch {
-    setDirtyState(true, "Image update failed. Please try another file.");
-  }
-
-  nodeImageFileInput.value = "";
 });
 
 resetNodeImageButton.addEventListener("click", () => {
@@ -726,6 +868,7 @@ copyJsonButton.addEventListener("click", async () => {
 });
 
 populateIconPicker();
+populateLocationImagePicker();
 setFormDisabled(true);
 updateExport();
 setDirtyState(false);

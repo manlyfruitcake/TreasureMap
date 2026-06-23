@@ -7,6 +7,7 @@
     "icon_Ballroom.png",
     "icon_Beach.png",
     "icon_BeachShore.png",
+    "icon_coffeeBreak.png",
     "icon_Chopper.png",
     "icon_Diving.png",
     "icon_Gazebo.png",
@@ -27,10 +28,41 @@
     "icon_Zoro.png",
   ];
   const contentOverride = global.TreasureMapContent ?? {};
-  const ICONS = Array.isArray(contentOverride.icons) && contentOverride.icons.length
+  const overrideIcons = Array.isArray(contentOverride.icons)
     ? contentOverride.icons.filter((icon) => typeof icon === "string" && icon.trim())
-    : BUILTIN_ICONS;
+    : [];
+  const ICONS = [...new Set([...overrideIcons, ...BUILTIN_ICONS])];
   const BUILTIN_DEFAULT_LOCATION_IMAGE = "placeholder.svg";
+  const BUILTIN_LOCATION_IMAGES = [
+    "placeholder.svg",
+    "Screenshot 2026-06-22 at 14.46.36.png",
+    "Receptionist.jpg",
+    "Parking Area (Residence).jpeg",
+    "Pool Side.jpeg",
+    "Parking Area (Residence1).jpeg",
+    "image 4.png",
+    "CHILDREN PLAYGROUND.jpg",
+    "Grass Area (CPG).jpg",
+    "Musholla.jpeg",
+    "Musholla.png",
+    "PENDOPO ROUND TABLE 1.jpg",
+    "Seaside Terrace.jpeg",
+    "Grass Area (Marina).jpg",
+    "PARKING AREA (Marina).jpeg",
+    "GYM.jpg",
+    "Meeting Room (6).jpg",
+    "Superior Room.jpg",
+    "LIGHTHOUSE.jpg",
+    "POOLSIDE.jpeg",
+    "CHILDREN PLAYGROUND (1).jpg",
+    "Gazebo Krakatau.jpg",
+    "PremierDeluxe2-EDIITT.jpg",
+    "PARKING AREA (Lighthouse).jpeg",
+  ];
+  const overrideLocationImages = Array.isArray(contentOverride.locationImages)
+    ? contentOverride.locationImages.filter((image) => typeof image === "string" && image.trim())
+    : [];
+  const LOCATION_IMAGES = [...new Set([...overrideLocationImages, ...BUILTIN_LOCATION_IMAGES])];
   const DEFAULT_LOCATION_IMAGE =
     typeof contentOverride.defaultLocationImage === "string" && contentOverride.defaultLocationImage.trim()
       ? contentOverride.defaultLocationImage
@@ -230,6 +262,7 @@
     NODES_STORAGE_KEY,
     TEAMS_STORAGE_KEY,
     ICONS,
+    LOCATION_IMAGES,
     DEFAULT_LOCATION_IMAGE,
     DEFAULT_NODES,
     DEFAULT_TEAMS,
