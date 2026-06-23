@@ -13,6 +13,7 @@ const mapZoomControls = document.getElementById("mapZoomControls");
 const teamRosterButton = document.getElementById("teamRosterButton");
 const hintCard = document.getElementById("hintCard");
 const infoImage = document.getElementById("infoImage");
+const infoImageLoading = document.getElementById("infoImageLoading");
 const title = document.getElementById("infoTitle");
 const description = document.getElementById("infoDescription");
 const closeModalButton = document.getElementById("closeModalButton");
@@ -218,6 +219,16 @@ function getLocationImagePath(fileName) {
   return fileName.startsWith("data:") ? fileName : `./images/Location/${fileName}`;
 }
 
+function setInfoImageLoading(isLoading, message = "Loading image...") {
+  if (isLoading) {
+    infoImageLoading.querySelector("span:last-child").textContent = message;
+    infoImageLoading.classList.remove("hidden");
+    return;
+  }
+
+  infoImageLoading.classList.add("hidden");
+}
+
 function refreshStoredData({ rerenderNodes = false, rerenderTeams = false } = {}) {
   nodes = loadNodes();
   teams = loadTeams();
@@ -369,11 +380,20 @@ function openModal(nodeId) {
 
   title.textContent = node.title;
   description.textContent = node.description;
+  setInfoImageLoading(true);
   infoImage.src = getLocationImagePath(node.image);
   infoImage.alt = `${node.title} preview`;
   showAnimatedOverlay(modal, modal.querySelector(".info-card"));
   modal.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+
+  if (infoImage.complete) {
+    if (infoImage.naturalWidth > 0) {
+      setInfoImageLoading(false);
+    } else {
+      setInfoImageLoading(true, "Image unavailable");
+    }
+  }
 }
 
 function closeModal() {
@@ -381,6 +401,14 @@ function closeModal() {
   modal.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
 }
+
+infoImage.addEventListener("load", () => {
+  setInfoImageLoading(false);
+});
+
+infoImage.addEventListener("error", () => {
+  setInfoImageLoading(true, "Image unavailable");
+});
 
 function stopDragPan() {
   dragPanState = null;

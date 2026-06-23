@@ -535,11 +535,43 @@ button {
 }
 
 .image-placeholder {
+  position: relative;
   height: 142px;
   margin: 18px 0 24px;
   overflow: hidden;
   border-radius: 18px;
   background: rgba(255, 248, 234, 0.76);
+}
+
+.image-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 248, 234, 0.86);
+  color: #4b3728;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 600;
+  transition: opacity 180ms ease;
+}
+
+.image-loading.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.image-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(75, 55, 40, 0.2);
+  border-top-color: #2f6c77;
+  border-radius: 50%;
+  animation: image-spinner 820ms linear infinite;
 }
 
 .image-placeholder img {
@@ -688,6 +720,16 @@ button {
 
   to {
     opacity: 0;
+  }
+}
+
+@keyframes image-spinner {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
 
